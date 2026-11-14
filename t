@@ -714,7 +714,12 @@ do
 end
 
 SetGlobal("save script to files")
-local function SaveScriptToFiles(Link, File, Version, DeleteFile)
+local function SaveScriptToFiles(Link, File, Version, DeleteFile, Attempt)
+    Attempt = (Attempt or 0) + 1
+    if Attempt > 3 then
+        warn("[Tomas World Zero] El archivo '" .. tostring(File) .. "' fallo 3 veces seguidas, se omite.")
+        return nil
+    end
     local FileData
     local Success, Result = pcall(function()
         if isfile and writefile and readfile then
@@ -725,7 +730,9 @@ local function SaveScriptToFiles(Link, File, Version, DeleteFile)
             end
 
             if not isfile(FileName) then
+                local DownloadTries = 0
                 repeat
+                    DownloadTries = DownloadTries + 1
                     local Downloaded, DownloadError = pcall(function()
                         writefile(FileName, game:HttpGet(Link))
                     end)
@@ -736,6 +743,10 @@ local function SaveScriptToFiles(Link, File, Version, DeleteFile)
                         break
                     end
                     warn("writefile() failed or data was corrupted, trying again in 2 seconds\nReason: " ..tostring(DownloadError))
+                    if DownloadTries >= 5 then
+                        warn("[Tomas World Zero] No se pudo descargar '" .. tostring(File) .. "' tras 5 intentos.")
+                        break
+                    end
                     task.wait(2)
                 until ScriptUnloaded or KillSwitch
             end
@@ -748,10 +759,10 @@ local function SaveScriptToFiles(Link, File, Version, DeleteFile)
                     end)
                     if not FileData or (FileData and (FileData == "")) then
                         warn("failed to read file, possibly corrupted. Redownloading\nReason: " ..tostring(DownloadError))
-                        FileData = SaveScriptToFiles(Link, File, Version, true)
+                        FileData = SaveScriptToFiles(Link, File, Version, true, Attempt)
                     end
                 else
-                    FileData = SaveScriptToFiles(Link, File, Version, true)
+                    FileData = SaveScriptToFiles(Link, File, Version, true, Attempt)
                 end
             end
         else
@@ -3123,6 +3134,11 @@ local Window = Library:CreateWindow({
     EnableCompacting = true
 })
 Window:SetCornerRadius(20)
+-- Compatibilidad: el SaveManager actual busca la ventana en Library.Window (para los dialogos
+-- de confirmar/borrar configuraciones) y la libreria vieja no la registra.
+if Library.Window == nil then
+    Library.Window = Window
+end
 
 if not SV.GeneralTab then -- for unloaded general tab
 SetGlobal("creating general tab")
