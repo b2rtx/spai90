@@ -1,6 +1,6 @@
 --[[
     Tomas World Zero
-    Basado en el script de World // Zero de justdoingrandomstuff (credito al autor original).
+    Script para World // Zero.
     Usa la libreria "oldlibrary" (Obsidian, deividcomsono) del repo b2rtx/spai90.
     Cargar con:
     loadstring(game:HttpGet("https://raw.githubusercontent.com/b2rtx/spai90/main/t"))()
@@ -108,6 +108,7 @@ local function MakeErrorGui(MessageTitle, Message, Extra)
                 obj6.Size = UDim2.new(0.25, 0, 0.150000006, 0)
                 obj6.Position = UDim2.new(0.739221275, 0, 0.828954279, 0)
                 obj6.Name = "Join_Button"
+                obj6.Visible = false
                 obj6.Selectable = true
                 obj6.Parent = obj3
 
@@ -304,7 +305,7 @@ local function MakeErrorGui(MessageTitle, Message, Extra)
 
     local ErrorGuiDiscordButton = obj6.MouseButton1Click:Connect(function()
         if setclipboard then
-            setclipboard("https://discord.gg/bNWWpqFZbP")
+            setclipboard("")
             game:GetService("StarterGui"):SetCore("SendNotification", {
                 Title = "Copied!",
                 Text = "The invite to the discord has been copied to your devices clipboard!",
@@ -498,7 +499,7 @@ end
 
 SetGlobal("setting up auto execute")
 if EF.Queue then
-    local FileName = "JDRS/AutoExecute"
+    local FileName = "TWZ/AutoExecute"
     if isfile(FileName) then
         EF.Queue([[loadstring(game:HttpGet("https://raw.githubusercontent.com/b2rtx/spai90/main/t"))()]])
         SV.AlreadyQueued = true
@@ -512,8 +513,8 @@ end
 
 SetGlobal("checking for tabs to skip loading")
 do
-    local FileName = "JDRS/SkipTabs"
-    if isfile(FileName) and isfile("JDRS/saved_configs/settings/autoload.txt") then
+    local FileName = "TWZ/SkipTabs"
+    if isfile(FileName) and isfile("TWZ/saved_configs/settings/autoload.txt") then
         for Index, Tab in pairs(HttpService:JSONDecode(readfile(FileName))) do
             SV[Tab] = true
         end
@@ -618,24 +619,24 @@ local Locations = {
 }
 if Locations.MainMenu[StringPlaceID] then
     IsMainMenu = true
-    print("JDRS: player in main menu")
+    print("TWZ: player in main menu")
 elseif Locations.WorldHubs[StringPlaceID] then
     IsWorld = true
-    print("JDRS: player in lobby")
+    print("TWZ: player in lobby")
 elseif Locations.Dungeons[StringPlaceID] then
     IsDungeon = true
-    print("JDRS: player in dungeon")
+    print("TWZ: player in dungeon")
 elseif Locations.Towers[StringPlaceID] then
     IsDungeon = true
     IsTower = true
-    print("JDRS: player in tower")
+    print("TWZ: player in tower")
 elseif Locations.EventDungeons[StringPlaceID] then
     IsEventDungeon = true
     IsDungeon = true
-    print("JDRS: player is in event dungeon")
+    print("TWZ: player is in event dungeon")
 else
     IsWorld = true
-    print("JDRS: cannot determine where player is located... placeid: " ..StringPlaceID)
+    print("TWZ: cannot determine where player is located... placeid: " ..StringPlaceID)
 end
 
 -- || FIND CURRENT DUNGEON AND DELETE TABLE ||
@@ -671,7 +672,7 @@ local function SaveErrorToFile(ErrorLocation, ErrorMessage, ExtraInfo)
     ErrorLocation = tostring(ErrorLocation)
     ErrorMessage = tostring(ErrorMessage)
     ExtraInfo = tostring(ExtraInfo)
-    local ErrorFileName = "JDRS_script_error.txt"
+    local ErrorFileName = "TWZ_script_error.txt"
     appendfile(ErrorFileName, string.format(
         "Error: %*\nLocation: %*Extra info: %*\nDate: %*\n\n",
         ErrorMessage, ErrorLocation, ExtraInfo, os.date()
@@ -682,13 +683,13 @@ end
 SetGlobal("identifying executor")
 do
     local Success, Result = pcall(function()
-        print("JDRS: player is using", EF.ExecutorName, EF.ExecutorVersion)
+        print("TWZ: player is using", EF.ExecutorName, EF.ExecutorVersion)
     end)
     if not Success then
         if not EF.GetExecutor then
-            print("JDRS: couldn't identify executor, identity function missing.")
+            print("TWZ: couldn't identify executor, identity function missing.")
         else
-            print("JDRS: couldn't identify executor,", Result)
+            print("TWZ: couldn't identify executor,", Result)
         end
     end
 end
@@ -696,7 +697,7 @@ end
 SetGlobal("setting up ignore file download dates")
 do
     local Success, Result = pcall(function()
-        local FileName = "JDRS/ignore/DD"
+        local FileName = "TWZ/ignore/DD"
         if not isfile(FileName) then
             writefile(FileName, HttpService:JSONEncode(
                 {
@@ -723,8 +724,8 @@ local function SaveScriptToFiles(Link, File, Version, DeleteFile, Attempt)
     local FileData
     local Success, Result = pcall(function()
         if isfile and writefile and readfile then
-            local DownloadDates = HttpService:JSONDecode(readfile("JDRS/ignore/DD"))
-            local FileName = "JDRS/ignore/" ..File
+            local DownloadDates = HttpService:JSONDecode(readfile("TWZ/ignore/DD"))
+            local FileName = "TWZ/ignore/" ..File
             if DeleteFile and isfile(FileName) then
                 delfile(FileName)
             end
@@ -739,7 +740,7 @@ local function SaveScriptToFiles(Link, File, Version, DeleteFile, Attempt)
                     if not DownloadError then
                         DownloadDates[File].T = os.time()+86400
                         DownloadDates[File].V = Version
-                        writefile("JDRS/ignore/DD", HttpService:JSONEncode(DownloadDates))
+                        writefile("TWZ/ignore/DD", HttpService:JSONEncode(DownloadDates))
                         break
                     end
                     warn("writefile() failed or data was corrupted, trying again in 2 seconds\nReason: " ..tostring(DownloadError))
@@ -1073,7 +1074,7 @@ local function MobScanner()
                     IsAliveMobs += 1
                     if Mob.Parent and Mob.Parent == Workspace.Characters then
                         if IsDebug then
-                            warn("JDRS:", Mob, "(is a player)")
+                            warn("TWZ:", Mob, "(is a player)")
                         end
                         IsAliveMobs -= 1
                         return
@@ -1083,7 +1084,7 @@ local function MobScanner()
                     end
                     if FakeMobs[MobName] then
                         if IsDebug then
-                            warn("JDRS:", Mob, "(fake mob)")
+                            warn("TWZ:", Mob, "(fake mob)")
                         end
                         IsAliveMobs -= 1
                         return
@@ -1092,7 +1093,7 @@ local function MobScanner()
                         local BlockerHitbox = Mob:FindFirstChild("Part") or Mob:FindFirstChild("Base") or Mob:FindFirstChild("hitbox") or Mob:FindFirstChild("Hitbox") or Mob:FindFirstChild("EasterGiantEgg") or Mob:FindFirstChild("Collider") or Mob:FindFirstChild("HumanoidRootPart")
                         if not BlockerHitbox then
                             if IsDebug then
-                                warn("JDRS:", MobName, "(blocker has no target part)")
+                                warn("TWZ:", MobName, "(blocker has no target part)")
                             end
                             IsAliveMobs -= 1
                             return
@@ -1100,7 +1101,7 @@ local function MobScanner()
                         BlockerHitbox.Name = "Collider"
                         ISV.MobTable[Mob] = {IsBlocker = true}
                         if IsDebug then
-                            print("JDRS:", MobName, "(added, blocker)")
+                            print("TWZ:", MobName, "(added, blocker)")
                         end
                         return
                     end
@@ -1110,7 +1111,7 @@ local function MobScanner()
                         repeat
                             if time() > AllocatedLoadTime then
                                 if ISV.Debug then
-                                    warn("JDRS:", MobName, "(exceeded load time)")
+                                    warn("TWZ:", MobName, "(exceeded load time)")
                                 end
                                 break
                             end
@@ -1120,7 +1121,7 @@ local function MobScanner()
 
                         if MobData and (MobData.IsHunterPet or MobData.CanAttackMobs or MobData.CanAttackEntities) then
                             if IsDebug then
-                                warn("JDRS:", MobName, "(familiar or summon)")
+                                warn("TWZ:", MobName, "(familiar or summon)")
                             end
                             IsAliveMobs -= 1
                             return
@@ -1139,7 +1140,7 @@ local function MobScanner()
 
                         if DelayBosses[MobName] then
                             if IsDebug then
-                                print("JDRS:", MobName, "(prevent stuck)")
+                                print("TWZ:", MobName, "(prevent stuck)")
                             end
                             task.wait(1)
                         end
@@ -1147,7 +1148,7 @@ local function MobScanner()
                         if PriorityMobs[MobName] then
                             ISV.MobTable[Mob] = {Priority = true}
                             if IsDebug then
-                                print("JDRS:", MobName, "(added, priority)")
+                                print("TWZ:", MobName, "(added, priority)")
                             end
                             return
                         end
@@ -1155,23 +1156,23 @@ local function MobScanner()
                             if MobData.Invincible then
                                 ISV.MobTable[Mob] = {Invincible = true}
                                 if IsDebug then
-                                    print("JDRS:", MobName, "(added, invincible)")
+                                    print("TWZ:", MobName, "(added, invincible)")
                                 end
                             else
                                 ISV.MobTable[Mob] = {}
                                 if IsDebug then
-                                    print("JDRS:", MobName, "(added)")
+                                    print("TWZ:", MobName, "(added)")
                                 end
                             end
                         else
                             ISV.MobTable[Mob] = {NoData = true}
                             if IsDebug then
-                                print("JDRS:", MobName, "(added, no mob data)")
+                                print("TWZ:", MobName, "(added, no mob data)")
                             end
                         end
                     else
                         if IsDebug then
-                            warn("JDRS:", MobName, "(didn't add, no parent)")
+                            warn("TWZ:", MobName, "(didn't add, no parent)")
                         end
                         IsAliveMobs -= 1
                         return
@@ -1187,7 +1188,7 @@ local function MobScanner()
                         ISV.MobTable[Mob] = nil
                         IsAliveMobs -= 1
                         if ISV.Debug then
-                            warn("JDRS:", Name, "(died)")
+                            warn("TWZ:", Name, "(died)")
                         end
                     end
                 end)
@@ -1214,7 +1215,7 @@ local function MobScanner()
                         end
                         if not Mob.Parent then
                             if ISV.Debug then
-                                warn("JDRS:", Mob.Name, "(no parent)")
+                                warn("TWZ:", Mob.Name, "(no parent)")
                             end
                             TableReference[Mob] = nil
                             IsAliveMobs -= 1
@@ -1224,7 +1225,7 @@ local function MobScanner()
                         local Health = HealthProperties and HealthProperties:FindFirstChild("Health")
                         if Health and Health.Value == 0 then
                             if ISV.Debug then
-                                warn("JDRS:", Mob.Name, "(zero health)")
+                                warn("TWZ:", Mob.Name, "(zero health)")
                             end
                             TableReference[Mob] = nil
                             IsAliveMobs -= 1
@@ -1303,7 +1304,7 @@ local function MobScanner()
                     IsAliveMobs += 1
                     if Mob.Parent and Mob.Parent == Workspace.Characters then
                         if IsDebug then
-                            warn("JDRS:", Mob, "(is a player)")
+                            warn("TWZ:", Mob, "(is a player)")
                         end
                         IsAliveMobs -= 1
                         return
@@ -1313,7 +1314,7 @@ local function MobScanner()
                     end
                     if FakeMobs[MobName] then
                         if IsDebug then
-                            warn("JDRS:", Mob, "(fake mob)")
+                            warn("TWZ:", Mob, "(fake mob)")
                         end
                         IsAliveMobs -= 1
                         return
@@ -1326,21 +1327,21 @@ local function MobScanner()
                         BlockerHitbox.Name = "Collider"
                         ISV.MobTable[Mob] = {IsBlocker = true}
                         if IsDebug then
-                            print("JDRS:", MobName, "(added, blocker)")
+                            print("TWZ:", MobName, "(added, blocker)")
                         end
                         return
                     end
                     if Mob.Parent then
                         if Summons[MobName] then
                             if IsDebug then
-                                warn("JDRS:", MobName, "(summon)")
+                                warn("TWZ:", MobName, "(summon)")
                             end
                             IsAliveMobs -= 1
                             return
                         end
                         if DontAttackBosses[MobName] then
                             if IsDebug then
-                                warn("JDRS:", MobName, "(bad boss)")
+                                warn("TWZ:", MobName, "(bad boss)")
                             end
                             IsAliveMobs -= 1
                             return
@@ -1348,7 +1349,7 @@ local function MobScanner()
                         local FromSpawnPart = Mob:WaitForChild("FromSpawnPart", 2)
                         if FromSpawnPart and FromSpawnPart.Value and FakeSpawnParts[tostring(FromSpawnPart.Value)] then
                             if IsDebug then
-                                warn("JDRS:", MobName, "(fake mob)")
+                                warn("TWZ:", MobName, "(fake mob)")
                             end
                             IsAliveMobs -= 1
                             return
@@ -1357,7 +1358,7 @@ local function MobScanner()
                         local Owner = MobProperties and MobProperties:WaitForChild("Owner", 2)
                         if Owner and Owner.Value then
                             if IsDebug then
-                                warn("JDRS:", MobName, "(familiar)")
+                                warn("TWZ:", MobName, "(familiar)")
                             end
                             IsAliveMobs -= 1
                             return
@@ -1375,13 +1376,13 @@ local function MobScanner()
                         if PriorityMobs[MobName] then
                             ISV.MobTable[Mob] = {Priority = true}
                             if IsDebug then
-                                print("JDRS:", MobName, "(priority)")
+                                print("TWZ:", MobName, "(priority)")
                             end
                             return
                         end
                         ISV.MobTable[Mob] = {}
                         if IsDebug then
-                            print("JDRS:", MobName, "(added)")
+                            print("TWZ:", MobName, "(added)")
                         end
                     end
                 end
@@ -1395,7 +1396,7 @@ local function MobScanner()
                         ISV.MobTable[Mob] = nil
                         IsAliveMobs -= 1
                         if ISV.Debug then
-                            warn("JDRS:", Name, "(died)")
+                            warn("TWZ:", Name, "(died)")
                         end
                     end
                 end)
@@ -1422,7 +1423,7 @@ local function MobScanner()
                             TableReference[Mob] = nil
                             IsAliveMobs -= 1
                             if ISV.Debug then
-                                warn("JDRS:", Mob.Name, "(no parent)")
+                                warn("TWZ:", Mob.Name, "(no parent)")
                             end
                             continue
                         end
@@ -1432,7 +1433,7 @@ local function MobScanner()
                             TableReference[Mob] = nil
                             IsAliveMobs -= 1
                             if ISV.Debug then
-                                warn("JDRS:", Mob.Name, "(zero health)")
+                                warn("TWZ:", Mob.Name, "(zero health)")
                             end
                             continue
                         end
@@ -1567,7 +1568,7 @@ local function RejoinLastDungeon(DoRejoin)
         return
     end
     local Success, Result = pcall(function()
-        local RejoinFileName = "JDRS/" ..PlayerName.. "_Rejoin"
+        local RejoinFileName = "TWZ/" ..PlayerName.. "_Rejoin"
         if isfile(RejoinFileName) then
             SV.CreatingRejoinFile = true
             local RejoinData = nil
@@ -1870,7 +1871,7 @@ local function GetDungeonImage()
         if ISV.MissionId == 43 then
             ImageID = tonumber("15046578670")
         end
-        local ImageFile = "JDRS/DungeonImages"
+        local ImageFile = "TWZ/DungeonImages"
         if not isfile(ImageFile) then
             local ReturnedImage = game:HttpGet(("https://thumbnails.roblox.com/v1/assets?assetIds="..ImageID.."&size=420x420&format=Png"))
             ReturnedImage = HttpService:JSONDecode(ReturnedImage).data[1]
@@ -2238,14 +2239,14 @@ local function BuyFromLocalShop(ShopData, PurchaseData)
     local ItemPrice = PurchaseData.CoinPrice
     if IsDebug then
         print(string.format(
-            "JDRS: attempting to buy %* (%*) for %*",
+            "TWZ: attempting to buy %* (%*) for %*",
             ItemName, Item, ItemPrice
         ))
     end
     if not (Item and ItemPrice and ItemName) then
         if IsDebug then
             warn(string.format(
-                "JDRS: purchase failed, do these variables exist?\nItem name: %*\nInternal name: %*\nItem price: %*",
+                "TWZ: purchase failed, do these variables exist?\nItem name: %*\nInternal name: %*\nItem price: %*",
                     ItemName, Item, ItemPrice
             ))
         end
@@ -2256,7 +2257,7 @@ local function BuyFromLocalShop(ShopData, PurchaseData)
     if not (Coins and BuyLocal) then
         if IsDebug then
             warn(string.format(
-                "JDRS: purchase failed, do these variables exist?\nRemote path: %*\nCurrency path: %*",
+                "TWZ: purchase failed, do these variables exist?\nRemote path: %*\nCurrency path: %*",
                     BuyLocal and BuyLocal:GetFullName() or nil,
                     Coins and string.gsub(Coins:GetFullName(), PlayerName, "LocalPlayer") or "does player have currency "..tostring(Currency).."?"
             ))
@@ -2267,7 +2268,7 @@ local function BuyFromLocalShop(ShopData, PurchaseData)
     if not (CoinCount and tonumber(CoinCount.Value) >= ItemPrice) then
         if IsDebug then
             warn(string.format(
-                "JDRS: player doesn't have enough for %* (%*).\nItem costs %*, but player has %*",
+                "TWZ: player doesn't have enough for %* (%*).\nItem costs %*, but player has %*",
                 ItemName, Item, ItemPrice, CoinCount and CoinCount.Value or nil
             ))
         end
@@ -2853,7 +2854,7 @@ local function ItemSellCheck(NewItem, ManualSell) -- only called NewItem because
         if Count or Locked or Favorited or GiftWrap then
             if IsDebug then
                 print(string.format(
-                    "JDRS: Didn't sell %*, %*",
+                    "TWZ: Didn't sell %*, %*",
                     NewItem, Count or Locked or Favorited or GiftWrap
                 ))
             end
@@ -2863,7 +2864,7 @@ local function ItemSellCheck(NewItem, ManualSell) -- only called NewItem because
 
         if not NewItem or not NewItem.Name then
             if IsDebug then
-                print("JDRS: item had no name")
+                print("TWZ: item had no name")
             end
             SellItemCheck = SellItemCheck - 1
             return
@@ -2874,7 +2875,7 @@ local function ItemSellCheck(NewItem, ManualSell) -- only called NewItem because
         if XP and not SV.IncludePets then
             if IsDebug then
                 print(string.format(
-                    "JDRS: didn't sell %*, pet",
+                    "TWZ: didn't sell %*, pet",
                     NewItem
                 ))
             end
@@ -2888,7 +2889,7 @@ local function ItemSellCheck(NewItem, ManualSell) -- only called NewItem because
             if not SV.IncludeCharms then
                 if IsDebug then
                     print(string.format(
-                        "JDRS: didn't sell %*, charm",
+                        "TWZ: didn't sell %*, charm",
                         NewItem
                     ))
                 end
@@ -2903,7 +2904,7 @@ local function ItemSellCheck(NewItem, ManualSell) -- only called NewItem because
             if ItemRarity == 7 then
                 if IsDebug then
                     print(string.format(
-                        "JDRS: didn't sell %*, Zero Gear",
+                        "TWZ: didn't sell %*, Zero Gear",
                         NewItem
                     ))
                 end
@@ -3125,7 +3126,7 @@ Toggles = Library.Toggles
 SetGlobal("creating window")
 local Window = Library:CreateWindow({
     Title = "Tomas World Zero",
-    Footer = "Tomas World Zero | basado en el script de justdoingrandomstuff",
+    Footer = "Tomas World Zero",
     Icon = 17210785932,
     NotifySide = "Right",
     AutoShow = true,
@@ -4916,7 +4917,7 @@ local LeftTab = DiscTab:AddLeftTabbox("Left Tabbox")
     local FirstTab = LeftTab:AddTab("Main")
     local SecondTab = LeftTab:AddTab("Settings")
 local RightTab = DiscTab:AddRightTabbox("Right Tabbox")
-    local ThirdTab = RightTab:AddTab("Join the discord")
+    local ThirdTab = RightTab:AddTab("Webhook")
 
 FirstTab:AddInput("WebhookLinkInput", {
     Text = "Webhook link",
@@ -4979,19 +4980,6 @@ SecondTab:AddButton({
         end)
     end
 })
-ThirdTab:AddLabel("if you wish to get news about <font color='#33FF33'>updates</font> and <font color='#33FF33'>changes</font> to the script, or <font color='#ff3333'>report issues</font>, then consider joining the <font color='#5650F6'>discord</font>!", true)
-ThirdTab:AddButton({
-    Text = "Copy discord invite link",
-    Tooltip = "The invite will be copied to your devices clipboard!",
-    Func = function()
-        local Success, Result = pcall(function()
-            setclipboard("https://discord.gg/bNWWpqFZbP")
-        end)
-        if not Success then
-            Library:Notify("Your executor doesn't allow this", 5)
-        end
-    end
-})
 end -- for unloaded discord tab
 
 if not SV.ConfigurationTab then -- for unloaded config tab
@@ -5041,7 +5029,7 @@ FirstTab:AddDropdown("UnloadTabDropdown", {
                 for Tab in ChangedValue do
                     table.insert(TabsToUnload, tostring(Tab))
                 end
-                writefile("JDRS/SkipTabs", HttpService:JSONEncode(TabsToUnload))
+                writefile("TWZ/SkipTabs", HttpService:JSONEncode(TabsToUnload))
             end
             LastUpdated = nil
         end
@@ -5052,12 +5040,12 @@ FirstTab:AddButton({
     Text = "Stop script from executing",
     Func = function()
         print("running delete")
-        local FileName = "JDRS/AutoExecute"
+        local FileName = "TWZ/AutoExecute"
         if isfile(FileName) then
             delfile(FileName)
         end
         if EF.ClearQueue then
-            Library:Notify("Script will not be ran when you teleport. Hopefully you enjoyed using it without encountering any issues!\n -JDRS", 10)
+            Library:Notify("Script will not be ran when you teleport. Hopefully you enjoyed using it without encountering any issues!\n -TWZ", 10)
             EF.ClearQueue()
         end
     end
@@ -5069,7 +5057,7 @@ FirstTab:AddButton({
     Func = function()
         KillSwitch = true
         CleanUpScript(true)
-        print("JDRS: script has been unloaded")
+        print("TWZ: script has been unloaded")
     end
 })
         SecondTab:AddLabel("These options should only be used when attempting to report issues with the script, they are intentionally vague as I know what they are referring to.", true)
@@ -5097,11 +5085,11 @@ FirstTab:AddButton({
                 end
                 local TargetMob = CurrentMob
                 if not TargetMob then
-                    print("JDRS: no mob is a target")
+                    print("TWZ: no mob is a target")
                     return
                 end
                 local TargetMobReference = ISV.MobTable[TargetMob]
-                local MobString = "JDRS: current target is " .. TargetMob.Name
+                local MobString = "TWZ: current target is " .. TargetMob.Name
                 if TargetMobReference then
                     if TargetMobReference.Invincible then
                         MobString = MobString .. " (invincible)"
@@ -5129,7 +5117,7 @@ FirstTab:AddButton({
                     warn("No mobs are being targeted, not in dungeon.")
                     return
                 end
-                local MobString = "JDRS current mobs: " ..tostring(IsAliveMobs).. "\n"
+                local MobString = "TWZ current mobs: " ..tostring(IsAliveMobs).. "\n"
                 for Mob, Info in ISV.MobTable do
                     MobString = MobString .. tostring(Mob)
                     if Info.Invincible then
@@ -5162,7 +5150,7 @@ FirstTab:AddButton({
                     warn("No objects are being teleported, not in dungeon.")
                     return
                 end
-                local ObjString = "JDRS current objects:\n"
+                local ObjString = "TWZ current objects:\n"
                 for Part, Info in TeleportParts do
                     ObjString = ObjString .. string.format(
                         "%* %*Path: %*\n",
@@ -5933,7 +5921,7 @@ if not IsMainMenu then
                     KillSwitch = true
                     Library:Notify("Prestiging...", 5)
                     task.wait(5)
-                    local PrestigeFile = "JDRS/" ..LocalPlayer.Name.. "_Prestige.txt"
+                    local PrestigeFile = "TWZ/" ..LocalPlayer.Name.. "_Prestige.txt"
                     if isfile(PrestigeFile) and StringPlaceID == "4310463616" and not IsDungeon then
                         delfile(PrestigeFile)
                         Remotes:WaitForChild("Profile_Prestige"):FireServer()
@@ -6982,7 +6970,7 @@ end -- for unloaded discord tab
 
 if not SV.ConfigurationTab then -- for unloaded config tab
 Toggles.AutoScriptToggle:OnChanged(function(ChangedValue) -- inject script
-    local FileName = "JDRS/AutoExecute"
+    local FileName = "TWZ/AutoExecute"
     if ChangedValue then
         if not isfile(FileName) then
             writefile(FileName, "")
@@ -7030,7 +7018,7 @@ if IsDungeon and not KillSwitch then
             end
         else
             warn(string.format(
-                "JDRS: Unable to get skill data. Check variables below\nClass data: %*\nPet data: %*",
+                "TWZ: Unable to get skill data. Check variables below\nClass data: %*\nPet data: %*",
                 ClassSkills and "Yes" or "No", PetSkills and "Yes" or "No"
             ))
         end
@@ -7047,7 +7035,7 @@ if not IsMainMenu then
     end)
     if not Success then
         SV.CanRequire = nil
-        print("JDRS: executor doesn't support require(). Applying fixes.")
+        print("TWZ: executor doesn't support require(). Applying fixes.")
     else
         SV.CanRequire = true
     end
@@ -7286,7 +7274,7 @@ if IsDungeon then
                             CreateHookOnFunction(SV.HeavenDisplayHook, true)
                         end)
                         if not Success then
-                            print("JDRS: executor can't disable loot screen")
+                            print("TWZ: executor can't disable loot screen")
                         end
                     end
                     local SpawnChest = Remotes:WaitForChild("Chests_SpawnChest", math.huge)
@@ -7669,7 +7657,7 @@ end
 --    PlayerCharacter = LocalPlayer.Character
 --    PlayerCollider = PlayerCharacter:WaitForChild("Collider")
 --    PlayerRoot = PlayerCharacter:WaitForChild("HumanoidRootPart")
---    print("JDRS: local player character found")
+--    print("TWZ: local player character found")
 --end
 
 SetGlobal("prevent falling part")
@@ -7718,7 +7706,7 @@ if IsTower and SV.CanRequire and EF.Hook and EF.NewClosure then
         CreateHookOnFunction(DisplayItem, true)
     end)
     if not Success then
-        print("JDRS: executor can't disable loot screen")
+        print("TWZ: executor can't disable loot screen")
     end
 end
 
@@ -7804,7 +7792,7 @@ function CleanUpScript()
     end
     if DC then
         if EF.Queue then
-            local FileName = "JDRS/AutoExecute"
+            local FileName = "TWZ/AutoExecute"
             if isfile(FileName) then
                 delfile(FileName)
                 EF.ClearQueue()
@@ -7931,7 +7919,7 @@ if SaveManager then
         SaveManager:SetLibrary(Library)
         SaveManager:IgnoreThemeSettings()
         SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
-        SaveManager:SetFolder("JDRS/saved_configs")
+        SaveManager:SetFolder("TWZ/saved_configs")
         SaveManager:BuildConfigSection(ConfigTab)
         SaveManager:LoadAutoloadConfig()
     end)
