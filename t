@@ -3280,7 +3280,7 @@ local Window = Library:CreateWindow({
     Footer = "Tomas World Zero",
     Icon = 17210785932,
     NotifySide = "Right",
-    AutoShow = true,
+    AutoShow = false, -- se crea oculta; al final se decide si mostrarla (ver 'toggle menu')
     ShowCustomCursor = false,
     ToggleKeybind = Enum.KeyCode.Zero,
     EnableCompacting = true
@@ -3291,6 +3291,12 @@ Window:SetCornerRadius(20)
 if Library.Window == nil then
     Library.Window = Window
 end
+_G.TWZMenuDecided = nil
+task.delay(30, function()
+    if not _G.TWZMenuDecided and Library and Library.Toggled == false then
+        pcall(function() Library:Toggle(true) end)
+    end
+end)
 
 if not SV.GeneralTab then -- for unloaded general tab
 SetGlobal("creating general tab")
@@ -8115,8 +8121,11 @@ SetGlobal("toggle menu")
 -- asi que se espera un poco antes de revisar si hay que ocultar el menu. No frena el resto de la carga.
 task.defer(function()
     task.wait(0.5)
+    _G.TWZMenuDecided = true
     if Toggles.HideGuiToggle and Toggles.HideGuiToggle.Value then
-        Library:Toggle(false)
+        Library:Toggle(false) -- queda oculta (ya empezo oculta)
+    else
+        Library:Toggle(true) -- se muestra al terminar de cargar
     end
 end)
 
