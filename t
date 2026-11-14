@@ -7879,11 +7879,16 @@ function CleanUpScript()
 end
 
 SetGlobal("obsidian save manager")
-SaveManager = SaveScriptToFiles("https://raw.githubusercontent.com/b2rtx/spai90/main/savemanager", "S", 2)
-if not SaveManager then
-    -- Respaldo: solo se usa si todavia no subiste el archivo "savemanager" a tu repo
-    warn("[Tomas World Zero] No se encontro 'savemanager' en tu repo, usando la copia externa.")
-    SaveManager = SaveScriptToFiles("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/addons/SaveManager.lua", "S", 3)
+do
+    local OwnSaveManagerLink = "https://raw.githubusercontent.com/b2rtx/spai90/main/savemanager"
+    -- Se comprueba primero que exista: si no, la descarga se reintentaria para siempre
+    local OwnExists = pcall(function() return game:HttpGet(OwnSaveManagerLink) end)
+    if OwnExists then
+        SaveManager = SaveScriptToFiles(OwnSaveManagerLink, "S", 2)
+    else
+        warn("[Tomas World Zero] No se encontro 'savemanager' en tu repo, usando la copia externa.")
+        SaveManager = SaveScriptToFiles("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/addons/SaveManager.lua", "S", 3)
+    end
 end
 
 print("Script took", FormatDecimal(os.clock() - ScriptLoadingStart), "seconds to fully load from execution time")
