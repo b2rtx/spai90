@@ -18,6 +18,152 @@ if _G.ScriptRunning then
 end
 _G.ScriptRunning = true -- prevent script from being loaded twice
 
+-- || PANTALLA DE CARGA || solo es visual: si algo falla aqui se ignora y el script sigue normal
+do
+    pcall(function()
+        local Version = "1.1.0"
+        local Parent
+        pcall(function() Parent = (gethui and gethui()) or game:GetService("CoreGui") end)
+        if not Parent then Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui") end
+
+        local Gui = Instance.new("ScreenGui")
+        Gui.Name = "TWZ_Loading"
+        Gui.ResetOnSpawn = false
+        Gui.IgnoreGuiInset = true
+        Gui.DisplayOrder = 999999
+        Gui.Parent = Parent
+
+        local Main = Instance.new("Frame")
+        Main.AnchorPoint = Vector2.new(0.5, 0)
+        Main.Position = UDim2.new(0.5, 0, 0.1, 0)
+        Main.Size = UDim2.new(0, 300, 0, 0)
+        Main.AutomaticSize = Enum.AutomaticSize.Y
+        Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+        Main.BorderSizePixel = 0
+        Main.Parent = Gui
+
+        local Corner = Instance.new("UICorner")
+        Corner.CornerRadius = UDim.new(0, 10)
+        Corner.Parent = Main
+        local Stroke = Instance.new("UIStroke")
+        Stroke.Color = Color3.fromRGB(40, 40, 40)
+        Stroke.Thickness = 1
+        Stroke.Parent = Main
+        local Padding = Instance.new("UIPadding")
+        Padding.PaddingTop = UDim.new(0, 12)
+        Padding.PaddingBottom = UDim.new(0, 12)
+        Padding.PaddingLeft = UDim.new(0, 14)
+        Padding.PaddingRight = UDim.new(0, 14)
+        Padding.Parent = Main
+        local Layout = Instance.new("UIListLayout")
+        Layout.SortOrder = Enum.SortOrder.LayoutOrder
+        Layout.Padding = UDim.new(0, 5)
+        Layout.Parent = Main
+
+        local Bar = Instance.new("Frame")
+        Bar.LayoutOrder = 0
+        Bar.Size = UDim2.new(1, 0, 0, 3)
+        Bar.BackgroundColor3 = Color3.fromRGB(125, 85, 255)
+        Bar.BorderSizePixel = 0
+        Bar.Parent = Main
+
+        local function NewLabel(Order, Text, Size, Color, Font)
+            local Label = Instance.new("TextLabel")
+            Label.LayoutOrder = Order
+            Label.Size = UDim2.new(1, 0, 0, Size + 6)
+            Label.BackgroundTransparency = 1
+            Label.Text = Text
+            Label.TextSize = Size
+            Label.TextColor3 = Color
+            Label.Font = Font
+            Label.TextXAlignment = Enum.TextXAlignment.Left
+            Label.Parent = Main
+            return Label
+        end
+
+        NewLabel(1, "Tomas World Zero", 20, Color3.new(1, 1, 1), Enum.Font.GothamBold)
+        local Subtitle = NewLabel(2, "v" .. Version .. "  |  cargando...", 13, Color3.fromRGB(150, 150, 150), Enum.Font.GothamMedium)
+
+        local Rows = {}
+        local RowOrder = 10
+        local Failed = false
+        local Closed = false
+
+        local function SetRow(Name, Ok)
+            local Row = Rows[Name]
+            if not Row then
+                RowOrder = RowOrder + 1
+                local Holder = Instance.new("Frame")
+                Holder.LayoutOrder = RowOrder
+                Holder.Size = UDim2.new(1, 0, 0, 20)
+                Holder.BackgroundTransparency = 1
+                Holder.Parent = Main
+
+                local NameLabel = Instance.new("TextLabel")
+                NameLabel.Size = UDim2.new(0.65, 0, 1, 0)
+                NameLabel.BackgroundTransparency = 1
+                NameLabel.Text = Name
+                NameLabel.TextSize = 14
+                NameLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+                NameLabel.Font = Enum.Font.GothamMedium
+                NameLabel.TextXAlignment = Enum.TextXAlignment.Left
+                NameLabel.Parent = Holder
+
+                Row = Instance.new("TextLabel")
+                Row.AnchorPoint = Vector2.new(1, 0)
+                Row.Position = UDim2.new(1, 0, 0, 0)
+                Row.Size = UDim2.new(0.35, 0, 1, 0)
+                Row.BackgroundTransparency = 1
+                Row.TextSize = 14
+                Row.Font = Enum.Font.GothamBold
+                Row.TextXAlignment = Enum.TextXAlignment.Right
+                Row.Parent = Holder
+                Rows[Name] = Row
+            end
+            if Ok == true then
+                Row.Text = "OK"
+                Row.TextColor3 = Color3.fromRGB(80, 200, 120)
+            elseif Ok == false then
+                Row.Text = "FALLO"
+                Row.TextColor3 = Color3.fromRGB(255, 90, 90)
+                Failed = true
+            else
+                Row.Text = "..."
+                Row.TextColor3 = Color3.fromRGB(150, 150, 150)
+            end
+        end
+
+        local function Close(Delay)
+            task.delay(Delay or 0, function()
+                if not Closed then
+                    Closed = true
+                    pcall(function() Gui:Destroy() end)
+                end
+            end)
+        end
+
+        SetRow("Libreria", nil)
+
+        _G.TWZSplash = {
+            Step = function(Name, Ok) pcall(SetRow, Name, Ok) end,
+            Done = function(Seconds)
+                pcall(function()
+                    if Failed then
+                        Subtitle.Text = "v" .. Version .. "  |  listo con avisos"
+                        Subtitle.TextColor3 = Color3.fromRGB(255, 200, 90)
+                    else
+                        Subtitle.Text = "v" .. Version .. "  |  listo en " .. string.format("%.1f", Seconds or 0) .. " s"
+                        Subtitle.TextColor3 = Color3.fromRGB(80, 200, 120)
+                    end
+                end)
+                Close(Failed and 5 or 2)
+            end,
+            Close = Close,
+        }
+        Close(40) -- seguro: se cierra sola aunque el script termine antes de tiempo
+    end)
+end
+
 local ScriptLoadingStart = os.clock()
 -- || CHECK STEP || - turn on to see scripts loading progress
 do
@@ -3116,9 +3262,14 @@ SetGlobal("getting obsidian Library")
 Library = SaveScriptToFiles("https://raw.githubusercontent.com/b2rtx/spai90/main/oldlibrary", "L", 3)
 if not Library then
     warn("[Tomas World Zero] No se pudo cargar la libreria propia, no se puede continuar.")
+    if _G.TWZSplash then
+        _G.TWZSplash.Step("Libreria", false)
+        _G.TWZSplash.Close(5)
+    end
     _G.ScriptRunning = nil
     return
 end
+if _G.TWZSplash then _G.TWZSplash.Step("Libreria", true) end
 
 Options = Library.Options
 Toggles = Library.Toggles
@@ -7004,6 +7155,7 @@ if IsDungeon and not KillSwitch then
     local Success, Result = pcall(function()
         ClassSkills = SaveScriptToFiles("https://raw.githubusercontent.com/b2rtx/spai90/main/c", "C", 5.4)
         PetSkills = SaveScriptToFiles("https://raw.githubusercontent.com/b2rtx/spai90/main/p", "P", 4.5)
+        if _G.TWZSplash then _G.TWZSplash.Step("Clases y mascotas", (ClassSkills and PetSkills) and true or false) end
         if ClassSkills and PetSkills then
             Class = GetPlayerClass()
             if Class ~= nil then
@@ -7895,6 +8047,10 @@ do
     end
 end
 
+if _G.TWZSplash then
+    _G.TWZSplash.Step("Configuraciones", SaveManager ~= nil)
+    _G.TWZSplash.Done(os.clock() - ScriptLoadingStart)
+end
 print("Script took", FormatDecimal(os.clock() - ScriptLoadingStart), "seconds to fully load from execution time")
 ScriptLoadingStart = nil
 
