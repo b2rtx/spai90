@@ -1064,9 +1064,13 @@ type IconModule = {
 }
 
 local FetchIcons, Icons = pcall(function()
-    return (loadstring(
-        game:HttpGet("https://raw.githubusercontent.com/deividcomsono/lucide-roblox-direct/refs/heads/main/source.lua")
-    ) :: () -> IconModule)()
+    -- Primero tu repo; si el archivo "lucide" todavia no existe, usa la copia externa como respaldo
+    local OwnOk, OwnSource = pcall(function()
+        return game:HttpGet("https://raw.githubusercontent.com/b2rtx/spai90/main/lucide")
+    end)
+    local Source = OwnOk and OwnSource
+        or game:HttpGet("https://raw.githubusercontent.com/deividcomsono/lucide-roblox-direct/refs/heads/main/source.lua")
+    return (loadstring(Source) :: () -> IconModule)()
 end)
 
 function Library:GetIcon(IconName: string)
