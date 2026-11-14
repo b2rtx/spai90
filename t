@@ -8111,9 +8111,14 @@ if not ISV.IsMobile and EF.HideGui and not SV.BadExecutor then
 end
 
 SetGlobal("toggle menu")
-if Toggles.HideGuiToggle.Value then
-    Library:Toggle()
-end
+-- El SaveManager aplica la configuracion guardada un instante despues de cargarla (task.defer),
+-- asi que se espera un poco antes de revisar si hay que ocultar el menu. No frena el resto de la carga.
+task.defer(function()
+    task.wait(0.5)
+    if Toggles.HideGuiToggle and Toggles.HideGuiToggle.Value then
+        Library:Toggle(false)
+    end
+end)
 
 SetGlobal("leaderboard info set up")
 if IsWorld or IsDungeon then
