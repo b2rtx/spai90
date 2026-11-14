@@ -7879,12 +7879,32 @@ function CleanUpScript()
 end
 
 SetGlobal("obsidian save manager")
-SaveManager = SaveScriptToFiles("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/addons/SaveManager.lua", "S", 1)
+SaveManager = SaveScriptToFiles("https://raw.githubusercontent.com/b2rtx/spai90/main/savemanager", "S", 2)
+if not SaveManager then
+    -- Respaldo: solo se usa si todavia no subiste el archivo "savemanager" a tu repo
+    warn("[Tomas World Zero] No se encontro 'savemanager' en tu repo, usando la copia externa.")
+    SaveManager = SaveScriptToFiles("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/addons/SaveManager.lua", "S", 3)
+end
 
 print("Script took", FormatDecimal(os.clock() - ScriptLoadingStart), "seconds to fully load from execution time")
 ScriptLoadingStart = nil
 
 SetGlobal("loading configs")
+-- Compatibilidad: el SaveManager actual llama :RunChanged() en cada elemento y la libreria
+-- vieja no lo tiene. SetValue ya ejecuta los callbacks, asi que aqui no hace falta hacer nada mas.
+do
+    local function AddRunChanged(ElementTable)
+        if type(ElementTable) ~= "table" then return end
+        for _, Element in pairs(ElementTable) do
+            if type(Element) == "table" and Element.RunChanged == nil then
+                Element.RunChanged = function() end
+            end
+        end
+    end
+    AddRunChanged(Library.Toggles)
+    AddRunChanged(Library.Options)
+end
+
 if SaveManager then
     local SMSuccess, SMError = pcall(function()
         SaveManager:SetLibrary(Library)
@@ -7948,9 +7968,9 @@ if IsWorld or IsDungeon then
             if not SV.GuildTab then
                 local TotalPointData = GetScore:InvokeServer("G_POINTS22", 1)
                 local DailyPointData = Remotes:WaitForChild("Profile_GetOwnCollectionValue", math.huge):InvokeServer("GuildPointsEarnedToday")
-                local GuildPointTotal = TotalPointData[1]
+                local GuildPointTotal = (type(TotalPointData) == "table" and TotalPointData[1]) or 0
                 local GuildPointTotalLimit = tonumber(SV.StopAfterTotalPoints)
-                local GuildPointDaily = DailyPointData
+                local GuildPointDaily = tonumber(DailyPointData) or 0
                 local GuildPointDailyLimit = tonumber(SV.StopAfterDailyPoints)
                 SV.TotalGuildPointLabel:SetText("Total Guild Points: " ..FormatNumber(GuildPointTotal))
                 SV.DailyGuildPointLabel:SetText("Daily Guild Points: " ..FormatNumber(GuildPointDaily))
