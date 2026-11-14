@@ -3112,7 +3112,7 @@ local function CreateToggles(ToggleTable)
 end
 
 SetGlobal("getting obsidian Library")
-Library = SaveScriptToFiles("https://raw.githubusercontent.com/b2rtx/spai90/main/oldlibrary", "L", 2)
+Library = SaveScriptToFiles("https://raw.githubusercontent.com/b2rtx/spai90/main/oldlibrary", "L", 3)
 if not Library then
     warn("[Tomas World Zero] No se pudo cargar la libreria propia, no se puede continuar.")
     _G.ScriptRunning = nil
