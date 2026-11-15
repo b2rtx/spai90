@@ -21,7 +21,19 @@ _G.ScriptRunning = true -- prevent script from being loaded twice
 -- || PANTALLA DE CARGA || solo es visual: si algo falla aqui se ignora y el script sigue normal
 do
     pcall(function()
-        local Version = "1.1.0"
+        local Version = "1.2.0"
+        local TweenService = game:GetService("TweenService")
+        local Accent = Color3.fromRGB(125, 85, 255)
+        local StateColors = {
+            ok = Color3.fromRGB(80, 200, 120),
+            fail = Color3.fromRGB(255, 90, 90),
+            slow = Color3.fromRGB(255, 200, 90),
+            wait = Accent,
+            pending = Color3.fromRGB(90, 90, 90),
+        }
+        local StateTexts = { ok = "listo", fail = "error", slow = "tardo", wait = "cargando", pending = "pendiente" }
+        local RowOrder = { ["Personaje"] = 1, ["Interfaz del juego"] = 2, ["Libreria"] = 3, ["Clases y mascotas"] = 4, ["Configuraciones"] = 5 }
+
         local Parent
         pcall(function() Parent = (gethui and gethui()) or game:GetService("CoreGui") end)
         if not Parent then Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui") end
@@ -33,134 +45,224 @@ do
         Gui.DisplayOrder = 999999
         Gui.Parent = Parent
 
-        local Main = Instance.new("Frame")
+        local Main = Instance.new("CanvasGroup")
         Main.AnchorPoint = Vector2.new(0.5, 0)
-        Main.Position = UDim2.new(0.5, 0, 0.1, 0)
-        Main.Size = UDim2.new(0, 300, 0, 0)
+        Main.Position = UDim2.new(0.5, 0, 0.08, 0)
+        Main.Size = UDim2.new(0, 330, 0, 0)
         Main.AutomaticSize = Enum.AutomaticSize.Y
         Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
         Main.BorderSizePixel = 0
+        Main.GroupTransparency = 1
         Main.Parent = Gui
 
-        local Corner = Instance.new("UICorner")
-        Corner.CornerRadius = UDim.new(0, 10)
-        Corner.Parent = Main
+        local function Round(Object, Radius)
+            local Corner = Instance.new("UICorner")
+            Corner.CornerRadius = UDim.new(0, Radius)
+            Corner.Parent = Object
+        end
+        Round(Main, 12)
+
         local Stroke = Instance.new("UIStroke")
         Stroke.Color = Color3.fromRGB(40, 40, 40)
         Stroke.Thickness = 1
         Stroke.Parent = Main
         local Padding = Instance.new("UIPadding")
-        Padding.PaddingTop = UDim.new(0, 12)
-        Padding.PaddingBottom = UDim.new(0, 12)
-        Padding.PaddingLeft = UDim.new(0, 14)
-        Padding.PaddingRight = UDim.new(0, 14)
+        Padding.PaddingTop = UDim.new(0, 14)
+        Padding.PaddingBottom = UDim.new(0, 14)
+        Padding.PaddingLeft = UDim.new(0, 16)
+        Padding.PaddingRight = UDim.new(0, 16)
         Padding.Parent = Main
         local Layout = Instance.new("UIListLayout")
         Layout.SortOrder = Enum.SortOrder.LayoutOrder
-        Layout.Padding = UDim.new(0, 5)
+        Layout.Padding = UDim.new(0, 8)
         Layout.Parent = Main
 
-        local Bar = Instance.new("Frame")
-        Bar.LayoutOrder = 0
-        Bar.Size = UDim2.new(1, 0, 0, 3)
-        Bar.BackgroundColor3 = Color3.fromRGB(125, 85, 255)
-        Bar.BorderSizePixel = 0
-        Bar.Parent = Main
-
-        local function NewLabel(Order, Text, Size, Color, Font)
+        local function NewLabel(Parent, Text, Size, Color, Font)
             local Label = Instance.new("TextLabel")
-            Label.LayoutOrder = Order
-            Label.Size = UDim2.new(1, 0, 0, Size + 6)
             Label.BackgroundTransparency = 1
             Label.Text = Text
             Label.TextSize = Size
             Label.TextColor3 = Color
             Label.Font = Font
             Label.TextXAlignment = Enum.TextXAlignment.Left
-            Label.Parent = Main
+            Label.Parent = Parent
             return Label
         end
 
-        NewLabel(1, "Tomas World Zero", 20, Color3.new(1, 1, 1), Enum.Font.GothamBold)
-        local Subtitle = NewLabel(2, "v" .. Version .. "  |  cargando...", 13, Color3.fromRGB(150, 150, 150), Enum.Font.GothamMedium)
+        -- Cabecera: titulo + version
+        local Header = Instance.new("Frame")
+        Header.LayoutOrder = 1
+        Header.Size = UDim2.new(1, 0, 0, 28)
+        Header.BackgroundTransparency = 1
+        Header.Parent = Main
+        local Title = NewLabel(Header, "Tomas World Zero", 20, Color3.new(1, 1, 1), Enum.Font.GothamBold)
+        Title.Size = UDim2.new(1, -62, 1, 0)
+        local Chip = Instance.new("Frame")
+        Chip.AnchorPoint = Vector2.new(1, 0.5)
+        Chip.Position = UDim2.new(1, 0, 0.5, 0)
+        Chip.Size = UDim2.new(0, 54, 0, 20)
+        Chip.BackgroundColor3 = Accent
+        Chip.BorderSizePixel = 0
+        Chip.Parent = Header
+        Round(Chip, 6)
+        local ChipText = NewLabel(Chip, "v" .. Version, 12, Color3.new(1, 1, 1), Enum.Font.GothamBold)
+        ChipText.Size = UDim2.new(1, 0, 1, 0)
+        ChipText.TextXAlignment = Enum.TextXAlignment.Center
+
+        local Subtitle = NewLabel(Main, "Preparando todo...", 13, Color3.fromRGB(150, 150, 150), Enum.Font.GothamMedium)
+        Subtitle.LayoutOrder = 2
+        Subtitle.Size = UDim2.new(1, 0, 0, 16)
+
+        -- Barra de progreso
+        local Track = Instance.new("Frame")
+        Track.LayoutOrder = 3
+        Track.Size = UDim2.new(1, 0, 0, 6)
+        Track.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
+        Track.BorderSizePixel = 0
+        Track.Parent = Main
+        Round(Track, 3)
+        local Fill = Instance.new("Frame")
+        Fill.Size = UDim2.new(0, 0, 1, 0)
+        Fill.BackgroundColor3 = Accent
+        Fill.BorderSizePixel = 0
+        Fill.Parent = Track
+        Round(Fill, 3)
 
         local Rows = {}
-        local RowOrder = 10
         local Failed = false
+        local Warned = false
         local Closed = false
 
-        local function SetRow(Name, Ok)
+        local function UpdateProgress()
+            local Total, Finished = 0, 0
+            for _, Row in pairs(Rows) do
+                Total = Total + 1
+                if Row.State == "ok" or Row.State == "fail" or Row.State == "slow" then
+                    Finished = Finished + 1
+                end
+            end
+            local Ratio = Total > 0 and (Finished / Total) or 0
+            TweenService:Create(Fill, TweenInfo.new(0.25), { Size = UDim2.new(Ratio, 0, 1, 0) }):Play()
+        end
+
+        local function SetRow(Name, State)
             local Row = Rows[Name]
             if not Row then
-                RowOrder = RowOrder + 1
                 local Holder = Instance.new("Frame")
-                Holder.LayoutOrder = RowOrder
-                Holder.Size = UDim2.new(1, 0, 0, 20)
+                Holder.LayoutOrder = 10 + (RowOrder[Name] or 20)
+                Holder.Size = UDim2.new(1, 0, 0, 22)
                 Holder.BackgroundTransparency = 1
                 Holder.Parent = Main
 
-                local NameLabel = Instance.new("TextLabel")
-                NameLabel.Size = UDim2.new(0.65, 0, 1, 0)
-                NameLabel.BackgroundTransparency = 1
-                NameLabel.Text = Name
-                NameLabel.TextSize = 14
-                NameLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-                NameLabel.Font = Enum.Font.GothamMedium
-                NameLabel.TextXAlignment = Enum.TextXAlignment.Left
-                NameLabel.Parent = Holder
+                local Dot = Instance.new("Frame")
+                Dot.AnchorPoint = Vector2.new(0, 0.5)
+                Dot.Position = UDim2.new(0, 0, 0.5, 0)
+                Dot.Size = UDim2.new(0, 8, 0, 8)
+                Dot.BorderSizePixel = 0
+                Dot.Parent = Holder
+                Round(Dot, 4)
 
-                Row = Instance.new("TextLabel")
-                Row.AnchorPoint = Vector2.new(1, 0)
-                Row.Position = UDim2.new(1, 0, 0, 0)
-                Row.Size = UDim2.new(0.35, 0, 1, 0)
-                Row.BackgroundTransparency = 1
-                Row.TextSize = 14
-                Row.Font = Enum.Font.GothamBold
-                Row.TextXAlignment = Enum.TextXAlignment.Right
-                Row.Parent = Holder
+                local NameLabel = NewLabel(Holder, Name, 14, Color3.fromRGB(225, 225, 225), Enum.Font.GothamMedium)
+                NameLabel.Position = UDim2.new(0, 18, 0, 0)
+                NameLabel.Size = UDim2.new(0.6, -18, 1, 0)
+
+                local StatusLabel = NewLabel(Holder, "", 13, Color3.new(1, 1, 1), Enum.Font.GothamBold)
+                StatusLabel.AnchorPoint = Vector2.new(1, 0)
+                StatusLabel.Position = UDim2.new(1, 0, 0, 0)
+                StatusLabel.Size = UDim2.new(0.4, 0, 1, 0)
+                StatusLabel.TextXAlignment = Enum.TextXAlignment.Right
+
+                Row = { Dot = Dot, Status = StatusLabel, State = "pending" }
                 Rows[Name] = Row
             end
-            if Ok == true then
-                Row.Text = "OK"
-                Row.TextColor3 = Color3.fromRGB(80, 200, 120)
-            elseif Ok == false then
-                Row.Text = "FALLO"
-                Row.TextColor3 = Color3.fromRGB(255, 90, 90)
-                Failed = true
-            else
-                Row.Text = "..."
-                Row.TextColor3 = Color3.fromRGB(150, 150, 150)
-            end
+            Row.State = State
+            Row.Dot.BackgroundColor3 = StateColors[State]
+            Row.Status.Text = StateTexts[State]
+            Row.Status.TextColor3 = StateColors[State]
+            if State == "fail" then Failed = true end
+            if State == "slow" then Warned = true end
+            UpdateProgress()
         end
 
         local function Close(Delay)
             task.delay(Delay or 0, function()
-                if not Closed then
-                    Closed = true
-                    pcall(function() Gui:Destroy() end)
-                end
+                if Closed then return end
+                Closed = true
+                pcall(function()
+                    TweenService:Create(Main, TweenInfo.new(0.4), { GroupTransparency = 1 }):Play()
+                end)
+                task.wait(0.45)
+                pcall(function() Gui:Destroy() end)
             end)
         end
 
-        SetRow("Libreria", nil)
+        -- Espera real: comprueba que el juego este listo antes de arrancar las funciones.
+        -- Si algo tarda demasiado, sigue de todos modos para no quedarse colgado.
+        local function WaitFor(Name, Condition, Timeout)
+            SetRow(Name, "wait")
+            local Start = os.clock()
+            while os.clock() - Start < Timeout do
+                local Success, Result = pcall(Condition)
+                if Success and Result then
+                    SetRow(Name, "ok")
+                    return true
+                end
+                task.wait(0.2)
+            end
+            SetRow(Name, "slow")
+            return false
+        end
+
+        SetRow("Libreria", "pending")
+        SetRow("Configuraciones", "pending")
+        pcall(function()
+            TweenService:Create(Main, TweenInfo.new(0.3), { GroupTransparency = 0 }):Play()
+        end)
 
         _G.TWZSplash = {
-            Step = function(Name, Ok) pcall(SetRow, Name, Ok) end,
+            Plan = function(Names)
+                for _, Name in ipairs(Names) do
+                    if not Rows[Name] then pcall(SetRow, Name, "pending") end
+                end
+            end,
+            Step = function(Name, Ok)
+                local State = (Ok == true and "ok") or (Ok == false and "fail") or "wait"
+                pcall(SetRow, Name, State)
+            end,
+            WaitReady = function()
+                pcall(function()
+                    local LocalPlayer = game:GetService("Players").LocalPlayer
+                    WaitFor("Personaje", function()
+                        local Character = LocalPlayer.Character
+                        return Character
+                            and Character:FindFirstChildOfClass("Humanoid")
+                            and Character:FindFirstChild("HumanoidRootPart")
+                    end, 20)
+                    WaitFor("Interfaz del juego", function()
+                        local PlayerGui = LocalPlayer:FindFirstChild("PlayerGui")
+                        return PlayerGui and PlayerGui:FindFirstChild("MainGui")
+                    end, 15)
+                    task.wait(1.5) -- margen para que el juego termine de vestir al personaje
+                end)
+            end,
             Done = function(Seconds)
                 pcall(function()
                     if Failed then
-                        Subtitle.Text = "v" .. Version .. "  |  listo con avisos"
-                        Subtitle.TextColor3 = Color3.fromRGB(255, 200, 90)
+                        Subtitle.Text = "Listo, pero algo fallo"
+                        Subtitle.TextColor3 = StateColors.fail
+                    elseif Warned then
+                        Subtitle.Text = "Listo (algo tardo en cargar)"
+                        Subtitle.TextColor3 = StateColors.slow
                     else
-                        Subtitle.Text = "v" .. Version .. "  |  listo en " .. string.format("%.1f", Seconds or 0) .. " s"
-                        Subtitle.TextColor3 = Color3.fromRGB(80, 200, 120)
+                        Subtitle.Text = "Todo listo en " .. string.format("%.1f", Seconds or 0) .. " s"
+                        Subtitle.TextColor3 = StateColors.ok
                     end
                 end)
                 Close(Failed and 5 or 2)
             end,
             Close = Close,
         }
-        Close(40) -- seguro: se cierra sola aunque el script termine antes de tiempo
+        Close(90) -- seguro: se cierra sola aunque el script termine antes de tiempo
     end)
 end
 
@@ -790,6 +892,12 @@ if not (IsWorld or IsMainMenu) then
     ISV.CurrentDungeonID = Locations.EventDungeons[StringPlaceID] or Locations.Dungeons[StringPlaceID] or Locations.Towers[StringPlaceID] or nil
 end
 Locations = nil
+
+-- || ESPERAR A QUE EL JUEGO ESTE LISTO || (no aplica en el menu principal)
+if _G.TWZSplash and not IsMainMenu then
+    _G.TWZSplash.Plan({ "Personaje", "Interfaz del juego" })
+    _G.TWZSplash.WaitReady()
+end
 
 SetGlobal("request message")
 local function RequestMessage(WebsiteLink, MessageContent, HighRiskRequest)
@@ -3259,6 +3367,7 @@ local function CreateToggles(ToggleTable)
 end
 
 SetGlobal("getting obsidian Library")
+if _G.TWZSplash then _G.TWZSplash.Step("Libreria", nil) end
 Library = SaveScriptToFiles("https://raw.githubusercontent.com/b2rtx/spai90/main/oldlibrary", "L", 3)
 if not Library then
     warn("[Tomas World Zero] No se pudo cargar la libreria propia, no se puede continuar.")
