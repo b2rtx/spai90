@@ -21,9 +21,10 @@ _G.ScriptRunning = true -- prevent script from being loaded twice
 -- || PANTALLA DE CARGA || solo es visual: si algo falla aqui se ignora y el script sigue normal
 do
     pcall(function()
-        local Version = "1.2.0"
+        local Version = "1.3.0"
         local TweenService = game:GetService("TweenService")
         local Accent = Color3.fromRGB(125, 85, 255)
+        local AccentLight = Color3.fromRGB(190, 150, 255)
         local StateColors = {
             ok = Color3.fromRGB(80, 200, 120),
             fail = Color3.fromRGB(255, 90, 90),
@@ -46,13 +47,12 @@ do
         Gui.Parent = Parent
 
         local Main = Instance.new("CanvasGroup")
-        Main.AnchorPoint = Vector2.new(0.5, 0)
-        Main.Position = UDim2.new(0.5, 0, 0.08, 0)
-        Main.Size = UDim2.new(0, 330, 0, 0)
+        Main.AnchorPoint = Vector2.new(0.5, 0.5)
+        Main.Position = UDim2.new(0.5, 0, 0.5, 0)
+        Main.Size = UDim2.new(0, 380, 0, 0)
         Main.AutomaticSize = Enum.AutomaticSize.Y
         Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
         Main.BorderSizePixel = 0
-        Main.GroupTransparency = 1
         Main.Parent = Gui
 
         local function Round(Object, Radius)
@@ -60,21 +60,29 @@ do
             Corner.CornerRadius = UDim.new(0, Radius)
             Corner.Parent = Object
         end
-        Round(Main, 12)
+        Round(Main, 14)
+
+        -- Si la pantalla es baja, se reduce el tamano para que siempre quepa
+        local Scale = Instance.new("UIScale")
+        pcall(function()
+            local Camera = workspace.CurrentCamera
+            if Camera then Scale.Scale = math.clamp(Camera.ViewportSize.Y / 340, 0.6, 1) end
+        end)
+        Scale.Parent = Main
 
         local Stroke = Instance.new("UIStroke")
-        Stroke.Color = Color3.fromRGB(40, 40, 40)
+        Stroke.Color = Color3.fromRGB(45, 45, 45)
         Stroke.Thickness = 1
         Stroke.Parent = Main
         local Padding = Instance.new("UIPadding")
-        Padding.PaddingTop = UDim.new(0, 14)
-        Padding.PaddingBottom = UDim.new(0, 14)
-        Padding.PaddingLeft = UDim.new(0, 16)
-        Padding.PaddingRight = UDim.new(0, 16)
+        Padding.PaddingTop = UDim.new(0, 16)
+        Padding.PaddingBottom = UDim.new(0, 16)
+        Padding.PaddingLeft = UDim.new(0, 18)
+        Padding.PaddingRight = UDim.new(0, 18)
         Padding.Parent = Main
         local Layout = Instance.new("UIListLayout")
         Layout.SortOrder = Enum.SortOrder.LayoutOrder
-        Layout.Padding = UDim.new(0, 8)
+        Layout.Padding = UDim.new(0, 6)
         Layout.Parent = Main
 
         local function NewLabel(Parent, Text, Size, Color, Font)
@@ -92,46 +100,77 @@ do
         -- Cabecera: titulo + version
         local Header = Instance.new("Frame")
         Header.LayoutOrder = 1
-        Header.Size = UDim2.new(1, 0, 0, 28)
+        Header.Size = UDim2.new(1, 0, 0, 32)
         Header.BackgroundTransparency = 1
         Header.Parent = Main
-        local Title = NewLabel(Header, "Tomas World Zero", 20, Color3.new(1, 1, 1), Enum.Font.GothamBold)
-        Title.Size = UDim2.new(1, -62, 1, 0)
+        local Title = NewLabel(Header, "Tomas World Zero", 24, Color3.new(1, 1, 1), Enum.Font.GothamBold)
+        Title.Size = UDim2.new(1, -70, 1, 0)
         local Chip = Instance.new("Frame")
         Chip.AnchorPoint = Vector2.new(1, 0.5)
         Chip.Position = UDim2.new(1, 0, 0.5, 0)
-        Chip.Size = UDim2.new(0, 54, 0, 20)
+        Chip.Size = UDim2.new(0, 62, 0, 24)
         Chip.BackgroundColor3 = Accent
         Chip.BorderSizePixel = 0
         Chip.Parent = Header
-        Round(Chip, 6)
-        local ChipText = NewLabel(Chip, "v" .. Version, 12, Color3.new(1, 1, 1), Enum.Font.GothamBold)
+        Round(Chip, 12)
+        local ChipGradient = Instance.new("UIGradient")
+        ChipGradient.Color = ColorSequence.new(Accent, AccentLight)
+        ChipGradient.Rotation = 90
+        ChipGradient.Parent = Chip
+        local ChipText = NewLabel(Chip, "v" .. Version, 14, Color3.new(1, 1, 1), Enum.Font.GothamBold)
         ChipText.Size = UDim2.new(1, 0, 1, 0)
         ChipText.TextXAlignment = Enum.TextXAlignment.Center
 
-        local Subtitle = NewLabel(Main, "Preparando todo...", 13, Color3.fromRGB(150, 150, 150), Enum.Font.GothamMedium)
-        Subtitle.LayoutOrder = 2
-        Subtitle.Size = UDim2.new(1, 0, 0, 16)
+        -- Subtitulo + porcentaje
+        local SubRow = Instance.new("Frame")
+        SubRow.LayoutOrder = 2
+        SubRow.Size = UDim2.new(1, 0, 0, 22)
+        SubRow.BackgroundTransparency = 1
+        SubRow.Parent = Main
+        local Subtitle = NewLabel(SubRow, "Preparando todo...", 15, Color3.fromRGB(150, 150, 150), Enum.Font.GothamMedium)
+        Subtitle.Size = UDim2.new(1, -64, 1, 0)
+        local Percent = NewLabel(SubRow, "0%", 18, AccentLight, Enum.Font.GothamBold)
+        Percent.AnchorPoint = Vector2.new(1, 0)
+        Percent.Position = UDim2.new(1, 0, 0, 0)
+        Percent.Size = UDim2.new(0, 60, 1, 0)
+        Percent.TextXAlignment = Enum.TextXAlignment.Right
 
-        -- Barra de progreso
+        -- Barra de progreso con degradado
         local Track = Instance.new("Frame")
         Track.LayoutOrder = 3
-        Track.Size = UDim2.new(1, 0, 0, 6)
-        Track.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
+        Track.Size = UDim2.new(1, 0, 0, 12)
+        Track.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
         Track.BorderSizePixel = 0
         Track.Parent = Main
-        Round(Track, 3)
+        Round(Track, 6)
+        local TrackStroke = Instance.new("UIStroke")
+        TrackStroke.Color = Color3.fromRGB(48, 48, 48)
+        TrackStroke.Thickness = 1
+        TrackStroke.Parent = Track
         local Fill = Instance.new("Frame")
         Fill.Size = UDim2.new(0, 0, 1, 0)
-        Fill.BackgroundColor3 = Accent
+        Fill.BackgroundColor3 = Color3.new(1, 1, 1)
         Fill.BorderSizePixel = 0
         Fill.Parent = Track
-        Round(Fill, 3)
+        Round(Fill, 6)
+        local FillGradient = Instance.new("UIGradient")
+        FillGradient.Color = ColorSequence.new(Accent, AccentLight)
+        FillGradient.Parent = Fill
 
         local Rows = {}
         local Failed = false
         local Warned = false
         local Closed = false
+
+        local function SetProgress(Ratio)
+            Ratio = math.clamp(Ratio, 0, 1)
+            TweenService:Create(
+                Fill,
+                TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                { Size = UDim2.new(Ratio, 0, 1, 0) }
+            ):Play()
+            Percent.Text = math.floor(Ratio * 100 + 0.5) .. "%"
+        end
 
         local function UpdateProgress()
             local Total, Finished = 0, 0
@@ -141,8 +180,7 @@ do
                     Finished = Finished + 1
                 end
             end
-            local Ratio = Total > 0 and (Finished / Total) or 0
-            TweenService:Create(Fill, TweenInfo.new(0.25), { Size = UDim2.new(Ratio, 0, 1, 0) }):Play()
+            SetProgress(Total > 0 and (Finished / Total) or 0)
         end
 
         local function SetRow(Name, State)
@@ -150,33 +188,41 @@ do
             if not Row then
                 local Holder = Instance.new("Frame")
                 Holder.LayoutOrder = 10 + (RowOrder[Name] or 20)
-                Holder.Size = UDim2.new(1, 0, 0, 22)
-                Holder.BackgroundTransparency = 1
+                Holder.Size = UDim2.new(1, 0, 0, 30)
+                Holder.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+                Holder.BorderSizePixel = 0
                 Holder.Parent = Main
+                Round(Holder, 8)
 
                 local Dot = Instance.new("Frame")
                 Dot.AnchorPoint = Vector2.new(0, 0.5)
-                Dot.Position = UDim2.new(0, 0, 0.5, 0)
-                Dot.Size = UDim2.new(0, 8, 0, 8)
+                Dot.Position = UDim2.new(0, 12, 0.5, 0)
+                Dot.Size = UDim2.new(0, 10, 0, 10)
                 Dot.BorderSizePixel = 0
                 Dot.Parent = Holder
-                Round(Dot, 4)
+                Round(Dot, 5)
+                local Ring = Instance.new("UIStroke")
+                Ring.Thickness = 3
+                Ring.Transparency = 0.6
+                Ring.Parent = Dot
 
-                local NameLabel = NewLabel(Holder, Name, 14, Color3.fromRGB(225, 225, 225), Enum.Font.GothamMedium)
-                NameLabel.Position = UDim2.new(0, 18, 0, 0)
-                NameLabel.Size = UDim2.new(0.6, -18, 1, 0)
+                local NameLabel = NewLabel(Holder, Name, 16, Color3.fromRGB(235, 235, 235), Enum.Font.GothamMedium)
+                NameLabel.Position = UDim2.new(0, 34, 0, 0)
+                NameLabel.Size = UDim2.new(0.6, -34, 1, 0)
 
-                local StatusLabel = NewLabel(Holder, "", 13, Color3.new(1, 1, 1), Enum.Font.GothamBold)
+                local StatusLabel = NewLabel(Holder, "", 15, Color3.new(1, 1, 1), Enum.Font.GothamBold)
                 StatusLabel.AnchorPoint = Vector2.new(1, 0)
-                StatusLabel.Position = UDim2.new(1, 0, 0, 0)
-                StatusLabel.Size = UDim2.new(0.4, 0, 1, 0)
+                StatusLabel.Position = UDim2.new(1, -12, 0, 0)
+                StatusLabel.Size = UDim2.new(0.4, -12, 1, 0)
                 StatusLabel.TextXAlignment = Enum.TextXAlignment.Right
 
-                Row = { Dot = Dot, Status = StatusLabel, State = "pending" }
+                Row = { Dot = Dot, Ring = Ring, Name = NameLabel, Status = StatusLabel, State = "pending" }
                 Rows[Name] = Row
             end
             Row.State = State
             Row.Dot.BackgroundColor3 = StateColors[State]
+            Row.Ring.Color = StateColors[State]
+            Row.Name.TextColor3 = (State == "pending") and Color3.fromRGB(140, 140, 140) or Color3.fromRGB(235, 235, 235)
             Row.Status.Text = StateTexts[State]
             Row.Status.TextColor3 = StateColors[State]
             if State == "fail" then Failed = true end
@@ -188,10 +234,6 @@ do
             task.delay(Delay or 0, function()
                 if Closed then return end
                 Closed = true
-                pcall(function()
-                    TweenService:Create(Main, TweenInfo.new(0.4), { GroupTransparency = 1 }):Play()
-                end)
-                task.wait(0.45)
                 pcall(function() Gui:Destroy() end)
             end)
         end
@@ -215,9 +257,6 @@ do
 
         SetRow("Libreria", "pending")
         SetRow("Configuraciones", "pending")
-        pcall(function()
-            TweenService:Create(Main, TweenInfo.new(0.3), { GroupTransparency = 0 }):Play()
-        end)
 
         _G.TWZSplash = {
             Plan = function(Names)
@@ -247,6 +286,7 @@ do
             end,
             Done = function(Seconds)
                 pcall(function()
+                    SetProgress(1)
                     if Failed then
                         Subtitle.Text = "Listo, pero algo fallo"
                         Subtitle.TextColor3 = StateColors.fail
@@ -258,7 +298,7 @@ do
                         Subtitle.TextColor3 = StateColors.ok
                     end
                 end)
-                Close(Failed and 5 or 2)
+                Close(Failed and 5 or 1.5)
             end,
             Close = Close,
         }
