@@ -783,6 +783,36 @@ do
     if PlayerCharacter and PlayerCharacter:FindFirstChild("Collider") then
         PlayerCollider = PlayerCharacter.Collider
     end
+
+    -- Si el personaje ya existe pero el juego todavia no le agrego el "Collider" (o el HumanoidRootPart),
+    -- CharacterAdded no se vuelve a disparar y esos datos se quedaban vacios para siempre. Como todas las
+    -- funciones esperan a que existan (CheckForCharacter), quedaban activas pero sin hacer nada.
+    -- Este hilo los completa en cuanto aparecen (maximo ~2 minutos) y no toca nada mas.
+    task.spawn(function()
+        for _ = 1, 600 do
+            if KillSwitch then
+                break
+            end
+            local Character = LocalPlayer.Character
+            if Character then
+                if PlayerCharacter ~= Character then
+                    PlayerCharacter = Character
+                end
+                local Root = Character:FindFirstChild("HumanoidRootPart")
+                local Collider = Character:FindFirstChild("Collider")
+                if Root and PlayerRoot ~= Root then
+                    PlayerRoot = Root
+                end
+                if Collider and PlayerCollider ~= Collider then
+                    PlayerCollider = Collider
+                end
+                if PlayerRoot and PlayerCollider and PlayerRoot.Parent == Character and PlayerCollider.Parent == Character then
+                    break
+                end
+            end
+            task.wait(0.2)
+        end
+    end)
 end
 
 SetGlobal("setting up auto execute")
