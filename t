@@ -789,6 +789,7 @@ local Toggles
 local ScriptUnloaded
 local SV = {}
 SV.Drops = {}
+SV.Chests = {} -- was never initialized: iterating/inserting it raised errors in towers
 local ISV = {}
 ISV.MobTable = {}
 local ConnectionTable = {}
@@ -3522,6 +3523,17 @@ Options = Library.Options
 Toggles = Library.Toggles
 
 SetGlobal("creating window")
+-- Crimson theme: colors only, no function is touched. Set before the window is created so every element uses it.
+pcall(function()
+    local Scheme = Library.Scheme
+    Scheme.BackgroundColor = Color3.fromRGB(13, 7, 12)
+    Scheme.MainColor = Color3.fromRGB(22, 11, 18)
+    Scheme.AccentColor = Color3.fromRGB(210, 35, 80)
+    Scheme.OutlineColor = Color3.fromRGB(62, 26, 42)
+    Scheme.FontColor = Color3.new(1, 1, 1)
+    Library:UpdateColorsUsingRegistry()
+end)
+
 local Window = Library:CreateWindow({
     Title = "Tomas World Zero",
     Footer = "Tomas World Zero",
@@ -3595,41 +3607,6 @@ CreateToggles({
     { "RestartStuckToggle", Text = "Rejoin if stuck", Tooltip = "if you stop doing damage for a long enough period of time this toggle will assume you're stuck and attempt to restart the dungeon.", Tab = ThirdTab },
     { "DodgeLethalToggle", Text = "Dodge lethal damage", Tooltip = "Melee classes only. Some attacks may automatically be dodged even when turned off.", Tab = ThirdTab },
     { "AutoPrestigeToggle", Text = "Auto prestige", Tooltip = "When you reach level 160 the script will teleport you to world 1, prestige, and then go to crabby crusade.", Tab = ThirdTab }
-})
-SecondTab:AddButton({
-    Text = "Diagnostics",
-    Tooltip = "Use it when the script stops doing anything: prints your character state and the main features to the console.",
-    Func = function()
-        local Success, Result = pcall(function()
-            local function Has(Value) return Value and "yes" or "NO" end
-            local Character = LocalPlayer.Character
-            local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
-            print("TWZ DIAG ------------------------------")
-            print("TWZ DIAG location: dungeon=" .. tostring(IsDungeon) .. " world=" .. tostring(IsWorld) .. " menu=" .. tostring(IsMainMenu))
-            print("TWZ DIAG script stopped (KillSwitch): " .. tostring(KillSwitch))
-            print("TWZ DIAG current character: " .. Has(Character))
-            print("TWZ DIAG saved character: " .. Has(PlayerCharacter) .. " | same as current: " .. tostring(Character ~= nil and PlayerCharacter == Character))
-            print("TWZ DIAG saved HumanoidRootPart: " .. Has(PlayerRoot) .. " | valid: " .. tostring(PlayerRoot ~= nil and PlayerRoot.Parent == Character))
-            print("TWZ DIAG saved Collider: " .. Has(PlayerCollider) .. " | valid: " .. tostring(PlayerCollider ~= nil and PlayerCollider.Parent == Character))
-            if PlayerRoot then
-                print("TWZ DIAG position: " .. tostring(PlayerRoot.Position))
-            end
-            if Humanoid then
-                print("TWZ DIAG health: " .. tostring(math.floor(Humanoid.Health)) .. " / " .. tostring(math.floor(Humanoid.MaxHealth)))
-            end
-            for _, Name in ipairs({ "AutoProgressToggle", "KillauraToggle", "SafeKillauraToggle", "PetKillauraToggle", "CollectDropToggle", "WaitTimeToggle" }) do
-                local Toggle = Toggles[Name]
-                print("TWZ DIAG " .. Name .. ": " .. tostring(Toggle and Toggle.Value))
-            end
-            print("TWZ DIAG alive mobs: " .. tostring(IsAliveMobs))
-            print("TWZ DIAG ------------------------------")
-        end)
-        if Success then
-            Library:Notify("Diagnostics written to the console", 4)
-        else
-            warn("TWZ DIAG failed: " .. tostring(Result))
-        end
-    end,
 })
 SecondTab:AddLabel("Account for ping", true)
 SecondTab:AddSlider("PingSlider", {
@@ -5429,7 +5406,7 @@ ConfigTab = Window:AddTab({
 })
 local LeftTab = ConfigTab:AddLeftTabbox("Left Tabbox")
     local FirstTab = LeftTab:AddTab("Main")
-    local SecondTab = LeftTab:AddTab("debug")
+    local SecondTab = LeftTab:AddTab("Diagnostics")
 
 CreateToggles({
     { "HideGuiToggle", Text = "Hide menu when executed", Tab = FirstTab },
@@ -5490,6 +5467,15 @@ FirstTab:AddButton({
     end
 })
 FirstTab:AddButton({
+    Text = "Force restart dungeon",
+    DoubleClick = true,
+    Func = function()
+        if IsDungeon then
+            ReplayDungeonLoop(ISV.MissionId, ISV.LoggedDifficulty)
+        end
+    end
+})
+FirstTab:AddButton({
     Text = "<font color='#ff3333'>Kill the script</font>",
     Tooltip = "unloads the script and garbage collects it, if you see errors in the console after doing this you can ignore them.",
     DoubleClick = true,
@@ -5499,201 +5485,72 @@ FirstTab:AddButton({
         print("TWZ: script has been unloaded")
     end
 })
-        SecondTab:AddLabel("These options should only be used when attempting to report issues with the script, they are intentionally vague as I know what they are referring to.", true)
-        SecondTab:AddDivider({Margin = -5})
-        SecondTab:AddToggle("MobDebugToggle", {
-            Text = "print debugs",
-            Tooltip = "prints what the script does when a mob is created",
-            Default = false,
-            Callback = function(ChangedValue)
-                if ChangedValue and (IsDungeon or IsWorld) then
-                    ISV.Debug = true
-                    Library:Notify("Tracked debugs will now be printed to the f9 console")
-                else
-                    ISV.Debug = nil
-                end
-            end
-        })
+        SecondTab:AddLabel("If something stops working, press the button and send a screenshot of the console (F9).", true)
         SecondTab:AddButton({
-            Text = "print current mob",
-            Tooltip = "prints the mob that the script is currently trying to target",
+            Text = "Diagnostics",
+            Tooltip = "Prints everything useful to find a problem (character state, main features, targets and executor compatibility) to the console.",
             Func = function()
-                if not IsDungeon then
-                    warn("No mobs are being targeted, not in dungeon.")
-                    return
-                end
-                local TargetMob = CurrentMob
-                if not TargetMob then
-                    print("TWZ: no mob is a target")
-                    return
-                end
-                local TargetMobReference = ISV.MobTable[TargetMob]
-                local MobString = "TWZ: current target is " .. TargetMob.Name
-                if TargetMobReference then
-                    if TargetMobReference.Invincible then
-                        MobString = MobString .. " (invincible)"
+                local Success, Result = pcall(function()
+                    local function Has(Value) return Value and "yes" or "NO" end
+                    local function Flag(Value) return Value and "yes" or "no" end
+                    local Character = LocalPlayer.Character
+                    local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
+                    print("TWZ DIAG ==============================")
+                    print("TWZ DIAG location: dungeon=" .. tostring(IsDungeon) .. " world=" .. tostring(IsWorld) .. " menu=" .. tostring(IsMainMenu) .. " tower=" .. tostring(IsTower))
+                    print("TWZ DIAG script stopped (KillSwitch): " .. tostring(KillSwitch))
+                    print("TWZ DIAG current character: " .. Has(Character))
+                    print("TWZ DIAG saved character: " .. Has(PlayerCharacter) .. " | same as current: " .. tostring(Character ~= nil and PlayerCharacter == Character))
+                    print("TWZ DIAG saved HumanoidRootPart: " .. Has(PlayerRoot) .. " | valid: " .. tostring(PlayerRoot ~= nil and PlayerRoot.Parent == Character))
+                    print("TWZ DIAG saved Collider: " .. Has(PlayerCollider) .. " | valid: " .. tostring(PlayerCollider ~= nil and PlayerCollider.Parent == Character))
+                    if PlayerRoot then
+                        print("TWZ DIAG position: " .. tostring(PlayerRoot.Position))
                     end
-                    if TargetMobReference.IsBlocker then
-                        MobString = MobString .. " (blocker, highest priority)"
+                    if Humanoid then
+                        print("TWZ DIAG health: " .. tostring(math.floor(Humanoid.Health)) .. " / " .. tostring(math.floor(Humanoid.MaxHealth)))
                     end
-                    if TargetMobReference.Priority then
-                        MobString = MobString .. " (priority)"
+                    for _, Name in ipairs({ "AutoProgressToggle", "KillauraToggle", "SafeKillauraToggle", "PetKillauraToggle", "CollectDropToggle", "CollectChestToggle", "WaitTimeToggle" }) do
+                        local Toggle = Toggles[Name]
+                        print("TWZ DIAG " .. Name .. ": " .. tostring(Toggle and Toggle.Value))
                     end
-                    if TargetMobReference.NoData then
-                        MobString = MobString .. " (no data)"
-                    end
-                    MobString = MobString .. " Path: " ..tostring(TargetMob:GetFullName())
-                end
-                print(MobString)
-                Library:Notify("Printed current target to console")
-            end
-        })
-        SecondTab:AddButton({
-            Text = "print target mobs",
-            Tooltip = "prints the mobs the script is targeting",
-            Func = function()
-                if not IsDungeon then
-                    warn("No mobs are being targeted, not in dungeon.")
-                    return
-                end
-                local MobString = "TWZ current mobs: " ..tostring(IsAliveMobs).. "\n"
-                for Mob, Info in ISV.MobTable do
-                    MobString = MobString .. tostring(Mob)
-                    if Info.Invincible then
-                        MobString = MobString .. " (invincible)"
-                    end
-                    if Info.IsBlocker then
-                        MobString = MobString .. " (blocker, highest priority)"
-                    end
-                    if Info.Priority then
-                        MobString = MobString .. " (priority)"
-                    end
-                    if Info.NoData then
-                        MobString = MobString .. " (no data)"
-                    end
-                    MobString = MobString .. " Path: " .. tostring(Mob:GetFullName())
-                    if Mob == CurrentMob then
-                        MobString = MobString .. " (current target)"
-                    end
-                    MobString = MobString .."\n"
-                end
-                print(MobString)
-                Library:Notify("Printed targets to console")
-            end
-        })
-        SecondTab:AddButton({
-            Text = "print target objects",
-            Tooltip = "prints the objects the script is trying to teleport",
-            Func = function()
-                if not IsDungeon then
-                    warn("No objects are being teleported, not in dungeon.")
-                    return
-                end
-                local ObjString = "TWZ current objects:\n"
-                for Part, Info in TeleportParts do
-                    ObjString = ObjString .. string.format(
-                        "%* %*Path: %*\n",
-                        Part, Info and Info.Regenerates and "(regenerates) " or "", Part:GetFullName()
-                    ) 
-                end
-                print(ObjString)
-                Library:Notify("Printed objects to console")
-            end
-        })
-        SecondTab:AddButton({
-            Text = "open console",
-            Tooltip = "Opens the roblox console if you can't use the chat or don't want to.",
-            Func = function()
-                StarterGui:SetCore("DevConsoleVisible", true)
-            end
-        })
-        SecondTab:AddButton({
-            Text = "remote spy",
-            Tooltip = "Loads a script used to view remote events/remote functions.\n(if closed you might crash)\n\n<font color='#FCCE7E'>Script credits:</font> upio and deivid",
-            Func = function()
-                Library:Notify("Cobalt is being loaded")
-                loadstring(game:HttpGet("https://gitlab.com/upio/cobalt/-/releases/permalink/latest/downloads/Cobalt.luau"))()
-            end
-        })
-        SecondTab:AddButton({
-            Text = "dex",
-            Tooltip = "Loads a script used to view the games workspace.\n\n<font color='#FCCE7E'>Script credits:</font> chillz",
-            Func = function()
-                Library:Notify("Dex is being loaded")
-                loadstring(game:HttpGet("https://github.com/AZYsGithub/DexPlusPlus/releases/latest/download/out.lua"))()
-            end
-        })
-        SecondTab:AddButton({
-            Text = "force restart dungeon",
-            DoubleClick = true,
-            Func = function()
-                if IsDungeon then
-                    ReplayDungeonLoop(ISV.MissionId, ISV.LoggedDifficulty)
-                end
-            end
-        })
-        CompatibilityButton = SecondTab:AddButton({
-            Text = "check compatibility",
-            Tooltip = "Creates a bunch of text labels in place of this button showing compatibility of important functions used by the script",
-            Func = function()
-                    SecondTab:AddDivider({Margin = -5})
-                local RequireLabel = SecondTab:AddLabel("require: ?", true)
-                local HookfunctionLabel = SecondTab:AddLabel("hookfunction: ?", true)
-                local RestorefunctionLabel = SecondTab:AddLabel("restorefunction: ?", true)
-                local UpvalueLabel = SecondTab:AddLabel("getupvalue: ?", true)
-                local NewcclosureLabel = SecondTab:AddLabel("newcclosure: ?", true)
-                local AutoInjectLabel = SecondTab:AddLabel("queueonteleport: ?", false)
-                local RequestLabel = SecondTab:AddLabel("request: ?", true)
-                local InvisTeleportLabel = SecondTab:AddLabel("invisible teleport: ?", true)
-                if SV.CanRequire then
-                    RequireLabel:SetText("require: <font color='#33ff33'>Yes</font>")
-                else
-                    RequireLabel:SetText("require: <font color='#ff3333'>No</font>")
-                end
+                    print("TWZ DIAG alive mobs: " .. tostring(IsAliveMobs))
 
-                if EF.Hook then
-                    HookfunctionLabel:SetText("hookfunction: <font color='#33ff33'>Yes</font>")
-                else
-                    HookfunctionLabel:SetText("hookfunction: <font color='#ff3333'>No</font>")
-                end
+                    -- Targets (dungeon only)
+                    if IsDungeon and ISV and ISV.MobTable then
+                        print("TWZ DIAG current target: " .. (CurrentMob and CurrentMob:GetFullName() or "none"))
+                        local MobCount = 0
+                        for Mob, Info in ISV.MobTable do
+                            MobCount = MobCount + 1
+                            if MobCount <= 15 then
+                                local Flags = {}
+                                if Info.Invincible then table.insert(Flags, "invincible") end
+                                if Info.IsBlocker then table.insert(Flags, "blocker") end
+                                if Info.Priority then table.insert(Flags, "priority") end
+                                if Info.NoData then table.insert(Flags, "no data") end
+                                print("TWZ DIAG mob: " .. tostring(Mob) .. " [" .. table.concat(Flags, ", ") .. "]" .. (Mob == CurrentMob and " <- current target" or ""))
+                            end
+                        end
+                        print("TWZ DIAG tracked mobs: " .. tostring(MobCount))
+                        local PartCount = 0
+                        for _ in TeleportParts do
+                            PartCount = PartCount + 1
+                        end
+                        print("TWZ DIAG objects being teleported: " .. tostring(PartCount))
+                    end
 
-                if EF.ClearHook then
-                    RestorefunctionLabel:SetText("restorefunction: <font color='#33ff33'>Yes</font>")
+                    -- Executor compatibility
+                    print("TWZ DIAG executor: " .. tostring(EF.ExecutorName) .. " " .. tostring(EF.ExecutorVersion))
+                    print("TWZ DIAG require: " .. Flag(SV.CanRequire) .. " | hookfunction: " .. Flag(EF.Hook) .. " | restorefunction: " .. Flag(EF.ClearHook))
+                    print("TWZ DIAG getupvalue: " .. Flag(debug and debug.getupvalue) .. " | newcclosure: " .. Flag(EF.NewClosure) .. " | queue on teleport: " .. Flag(EF.Queue) .. " | request: " .. Flag(EF.SendRequest))
+                    local CanDesync = false
+                    pcall(function() CanDesync = EF.Desync and EF.RaknetFunction.is_enabled() end)
+                    print("TWZ DIAG invisible teleport: " .. Flag(CanDesync))
+                    print("TWZ DIAG ==============================")
+                end)
+                if Success then
+                    Library:Notify("Diagnostics written to the console", 4)
                 else
-                    RestorefunctionLabel:SetText("restorefunction: <font color='#ff3333'>No</font>")
+                    warn("TWZ DIAG failed: " .. tostring(Result))
                 end
-
-                if debug and debug.getupvalue then
-                    UpvalueLabel:SetText("getupvalue: <font color='#33ff33'>Yes</font>")
-                else
-                    UpvalueLabel:SetText("getupvalue: <font color='#ff3333'>No</font>")
-                end
-
-                if EF.NewClosure then
-                    NewcclosureLabel:SetText("newcclosure: <font color='#33ff33'>Yes</font>")
-                else
-                    NewcclosureLabel:SetText("newcclosure: <font color='#ff3333'>No</font>")
-                end
-
-                if EF.Queue then
-                    AutoInjectLabel:SetText("queueonteleport: <font color='#33ff33'>Yes</font>")
-                else
-                    AutoInjectLabel:SetText("queueonteleport: <font color='#ff3333'>No</font>")
-                end
-
-                if EF.SendRequest then
-                    RequestLabel:SetText("request: <font color='#33ff33'>Yes</font>")
-                else
-                    RequestLabel:SetText("request: <font color='#ff3333'>No</font>")
-                end
-
-                if EF.Desync and EF.RaknetFunction.is_enabled() then
-                    InvisTeleportLabel:SetText("Can invisibly teleport: <font color='#33ff33'>Yes</font>", false)
-                else
-                    InvisTeleportLabel:SetText("invisible teleport: <font color='#ff3333'>No</font>")
-                end
-                CompatibilityButton:Destroy()
-                CompatibilityButton = nil
             end
         })
 end -- for unloaded config tab
