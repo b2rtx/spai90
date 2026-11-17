@@ -1,6 +1,6 @@
 --[[
     Tomas World Zero
-    Script para World // Zero.
+    Script for World // Zero.
     Usa la libreria "oldlibrary" (Obsidian, deividcomsono) del repo b2rtx/spai90.
     Cargar con:
     loadstring(game:HttpGet("https://raw.githubusercontent.com/b2rtx/spai90/main/t"))()
@@ -9,7 +9,7 @@ if not game:IsLoaded() then game.Loaded:Wait() end
 
 -- || CHECK IF IN WORLD ZERO ||
 if tostring(game.GameId) ~= "985731078" then -- set to string or obfuscation can mess it up
-    warn("[Tomas World Zero] Este script solo funciona en World // Zero.")
+    warn("[Tomas World Zero] This script only works in World // Zero.")
     return
 end
 
@@ -18,28 +18,33 @@ if _G.ScriptRunning then
 end
 _G.ScriptRunning = true -- prevent script from being loaded twice
 
--- || PANTALLA DE CARGA || solo es visual: si algo falla aqui se ignora y el script sigue normal
+-- || LOADING SCREEN || visual only: if anything fails here it is ignored and the script continues normally
 do
-    pcall(function()
-        local Version = "1.3.0"
+    local Gui
+    local Built = pcall(function()
+        local Version = "1.4.0"
         local TweenService = game:GetService("TweenService")
-        local Accent = Color3.fromRGB(125, 85, 255)
-        local AccentLight = Color3.fromRGB(190, 150, 255)
+
+        local Crimson = Color3.fromRGB(200, 30, 70)
+        local CrimsonLight = Color3.fromRGB(255, 75, 115)
+        local CardColor = Color3.fromRGB(20, 10, 17)
+        local Muted = Color3.fromRGB(150, 135, 145)
+        local Ink = Color3.fromRGB(13, 7, 12)
         local StateColors = {
-            ok = Color3.fromRGB(80, 200, 120),
-            fail = Color3.fromRGB(255, 90, 90),
-            slow = Color3.fromRGB(255, 200, 90),
-            wait = Accent,
-            pending = Color3.fromRGB(90, 90, 90),
+            ok = Color3.fromRGB(90, 210, 130),
+            fail = Color3.fromRGB(255, 64, 64),
+            slow = Color3.fromRGB(255, 190, 70),
+            wait = Color3.fromRGB(255, 255, 255),
+            pending = Color3.fromRGB(105, 90, 100),
         }
-        local StateTexts = { ok = "listo", fail = "error", slow = "tardo", wait = "cargando", pending = "pendiente" }
-        local RowOrder = { ["Personaje"] = 1, ["Interfaz del juego"] = 2, ["Libreria"] = 3, ["Clases y mascotas"] = 4, ["Configuraciones"] = 5 }
+        local StateTexts = { ok = "READY", fail = "ERROR", slow = "SLOW", wait = "LOADING", pending = "PENDING" }
+        local RowOrder = { ["Character"] = 1, ["Game interface"] = 2, ["Library"] = 3, ["Classes & pets"] = 4, ["Settings"] = 5 }
 
         local Parent
         pcall(function() Parent = (gethui and gethui()) or game:GetService("CoreGui") end)
         if not Parent then Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui") end
 
-        local Gui = Instance.new("ScreenGui")
+        Gui = Instance.new("ScreenGui")
         Gui.Name = "TWZ_Loading"
         Gui.ResetOnSpawn = false
         Gui.IgnoreGuiInset = true
@@ -49,9 +54,9 @@ do
         local Main = Instance.new("CanvasGroup")
         Main.AnchorPoint = Vector2.new(0.5, 0.5)
         Main.Position = UDim2.new(0.5, 0, 0.5, 0)
-        Main.Size = UDim2.new(0, 380, 0, 0)
+        Main.Size = UDim2.new(0, 420, 0, 0)
         Main.AutomaticSize = Enum.AutomaticSize.Y
-        Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+        Main.BackgroundColor3 = Color3.new(1, 1, 1)
         Main.BorderSizePixel = 0
         Main.Parent = Gui
 
@@ -60,23 +65,34 @@ do
             Corner.CornerRadius = UDim.new(0, Radius)
             Corner.Parent = Object
         end
-        Round(Main, 14)
+        Round(Main, 16)
 
-        -- Si la pantalla es baja, se reduce el tamano para que siempre quepa
+        local BackGradient = Instance.new("UIGradient")
+        BackGradient.Color = ColorSequence.new(Color3.fromRGB(28, 9, 20), Color3.fromRGB(10, 6, 10))
+        BackGradient.Rotation = 90
+        BackGradient.Parent = Main
+
+        -- Neon crimson border
+        local Stroke = Instance.new("UIStroke")
+        Stroke.Color = Color3.new(1, 1, 1)
+        Stroke.Thickness = 2
+        Stroke.Parent = Main
+        local StrokeGradient = Instance.new("UIGradient")
+        StrokeGradient.Color = ColorSequence.new(CrimsonLight, Color3.fromRGB(110, 20, 50))
+        StrokeGradient.Rotation = 45
+        StrokeGradient.Parent = Stroke
+
+        -- Smaller scale on short screens so it always fits
         local Scale = Instance.new("UIScale")
         pcall(function()
             local Camera = workspace.CurrentCamera
-            if Camera then Scale.Scale = math.clamp(Camera.ViewportSize.Y / 340, 0.6, 1) end
+            if Camera then Scale.Scale = math.clamp(Camera.ViewportSize.Y / 400, 0.6, 1) end
         end)
         Scale.Parent = Main
 
-        local Stroke = Instance.new("UIStroke")
-        Stroke.Color = Color3.fromRGB(45, 45, 45)
-        Stroke.Thickness = 1
-        Stroke.Parent = Main
         local Padding = Instance.new("UIPadding")
         Padding.PaddingTop = UDim.new(0, 16)
-        Padding.PaddingBottom = UDim.new(0, 16)
+        Padding.PaddingBottom = UDim.new(0, 14)
         Padding.PaddingLeft = UDim.new(0, 18)
         Padding.PaddingRight = UDim.new(0, 18)
         Padding.Parent = Main
@@ -85,7 +101,7 @@ do
         Layout.Padding = UDim.new(0, 6)
         Layout.Parent = Main
 
-        local function NewLabel(Parent, Text, Size, Color, Font)
+        local function NewLabel(LabelParent, Text, Size, Color, Font)
             local Label = Instance.new("TextLabel")
             Label.BackgroundTransparency = 1
             Label.Text = Text
@@ -93,74 +109,99 @@ do
             Label.TextColor3 = Color
             Label.Font = Font
             Label.TextXAlignment = Enum.TextXAlignment.Left
-            Label.Parent = Parent
+            Label.Parent = LabelParent
             return Label
         end
 
-        -- Cabecera: titulo + version
+        -- Header: "/ TOMAS WORLD ZERO" + version pill
         local Header = Instance.new("Frame")
         Header.LayoutOrder = 1
-        Header.Size = UDim2.new(1, 0, 0, 32)
+        Header.Size = UDim2.new(1, 0, 0, 34)
         Header.BackgroundTransparency = 1
         Header.Parent = Main
-        local Title = NewLabel(Header, "Tomas World Zero", 24, Color3.new(1, 1, 1), Enum.Font.GothamBold)
-        Title.Size = UDim2.new(1, -70, 1, 0)
+        local Title = NewLabel(Header, '<font color="rgb(255,75,115)">/</font> TOMAS WORLD ZERO', 22, Color3.new(1, 1, 1), Enum.Font.GothamBold)
+        Title.RichText = true
+        Title.Size = UDim2.new(1, -78, 1, 0)
         local Chip = Instance.new("Frame")
         Chip.AnchorPoint = Vector2.new(1, 0.5)
         Chip.Position = UDim2.new(1, 0, 0.5, 0)
-        Chip.Size = UDim2.new(0, 62, 0, 24)
-        Chip.BackgroundColor3 = Accent
+        Chip.Size = UDim2.new(0, 68, 0, 24)
+        Chip.BackgroundTransparency = 1
         Chip.BorderSizePixel = 0
         Chip.Parent = Header
         Round(Chip, 12)
-        local ChipGradient = Instance.new("UIGradient")
-        ChipGradient.Color = ColorSequence.new(Accent, AccentLight)
-        ChipGradient.Rotation = 90
-        ChipGradient.Parent = Chip
-        local ChipText = NewLabel(Chip, "v" .. Version, 14, Color3.new(1, 1, 1), Enum.Font.GothamBold)
+        local ChipStroke = Instance.new("UIStroke")
+        ChipStroke.Color = CrimsonLight
+        ChipStroke.Thickness = 1.5
+        ChipStroke.Parent = Chip
+        local ChipText = NewLabel(Chip, "v" .. Version, 13, CrimsonLight, Enum.Font.GothamBold)
         ChipText.Size = UDim2.new(1, 0, 1, 0)
         ChipText.TextXAlignment = Enum.TextXAlignment.Center
 
-        -- Subtitulo + porcentaje
+        -- Status text + percentage
         local SubRow = Instance.new("Frame")
         SubRow.LayoutOrder = 2
-        SubRow.Size = UDim2.new(1, 0, 0, 22)
+        SubRow.Size = UDim2.new(1, 0, 0, 26)
         SubRow.BackgroundTransparency = 1
         SubRow.Parent = Main
-        local Subtitle = NewLabel(SubRow, "Preparando todo...", 15, Color3.fromRGB(150, 150, 150), Enum.Font.GothamMedium)
-        Subtitle.Size = UDim2.new(1, -64, 1, 0)
-        local Percent = NewLabel(SubRow, "0%", 18, AccentLight, Enum.Font.GothamBold)
+        local Subtitle = NewLabel(SubRow, "LOADING SCRIPT", 14, Muted, Enum.Font.GothamBold)
+        Subtitle.Size = UDim2.new(1, -70, 1, 0)
+        local Percent = NewLabel(SubRow, "0%", 22, Color3.new(1, 1, 1), Enum.Font.GothamBold)
         Percent.AnchorPoint = Vector2.new(1, 0)
         Percent.Position = UDim2.new(1, 0, 0, 0)
-        Percent.Size = UDim2.new(0, 60, 1, 0)
+        Percent.Size = UDim2.new(0, 66, 1, 0)
         Percent.TextXAlignment = Enum.TextXAlignment.Right
 
-        -- Barra de progreso con degradado
+        -- Segmented progress bar (smooth fill + one segment per step)
         local Track = Instance.new("Frame")
         Track.LayoutOrder = 3
-        Track.Size = UDim2.new(1, 0, 0, 12)
-        Track.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        Track.Size = UDim2.new(1, 0, 0, 10)
+        Track.BackgroundColor3 = Color3.fromRGB(38, 18, 30)
         Track.BorderSizePixel = 0
         Track.Parent = Main
-        Round(Track, 6)
-        local TrackStroke = Instance.new("UIStroke")
-        TrackStroke.Color = Color3.fromRGB(48, 48, 48)
-        TrackStroke.Thickness = 1
-        TrackStroke.Parent = Track
+        Round(Track, 5)
         local Fill = Instance.new("Frame")
         Fill.Size = UDim2.new(0, 0, 1, 0)
         Fill.BackgroundColor3 = Color3.new(1, 1, 1)
         Fill.BorderSizePixel = 0
         Fill.Parent = Track
-        Round(Fill, 6)
+        Round(Fill, 5)
         local FillGradient = Instance.new("UIGradient")
-        FillGradient.Color = ColorSequence.new(Accent, AccentLight)
+        FillGradient.Color = ColorSequence.new(Crimson, CrimsonLight)
         FillGradient.Parent = Fill
 
         local Rows = {}
         local Failed = false
         local Warned = false
         local Closed = false
+
+        local function RebuildDividers()
+            for _, Child in ipairs(Track:GetChildren()) do
+                if Child.Name == "Divider" then Child:Destroy() end
+            end
+            local Total = 0
+            for _ in pairs(Rows) do Total = Total + 1 end
+            for Index = 1, Total - 1 do
+                local Divider = Instance.new("Frame")
+                Divider.Name = "Divider"
+                Divider.AnchorPoint = Vector2.new(0.5, 0)
+                Divider.Position = UDim2.new(Index / Total, 0, 0, 0)
+                Divider.Size = UDim2.new(0, 3, 1, 0)
+                Divider.BackgroundColor3 = Ink
+                Divider.BorderSizePixel = 0
+                Divider.ZIndex = 3
+                Divider.Parent = Track
+            end
+        end
+
+        local function Renumber()
+            local Names = {}
+            for Name in pairs(Rows) do table.insert(Names, Name) end
+            table.sort(Names, function(A, B) return (RowOrder[A] or 99) < (RowOrder[B] or 99) end)
+            for Index, Name in ipairs(Names) do
+                Rows[Name].Num.Text = string.format("%02d", Index)
+            end
+        end
 
         local function SetProgress(Ratio)
             Ratio = math.clamp(Ratio, 0, 1)
@@ -188,43 +229,55 @@ do
             if not Row then
                 local Holder = Instance.new("Frame")
                 Holder.LayoutOrder = 10 + (RowOrder[Name] or 20)
-                Holder.Size = UDim2.new(1, 0, 0, 30)
-                Holder.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+                Holder.Size = UDim2.new(1, 0, 0, 36)
+                Holder.BackgroundColor3 = CardColor
                 Holder.BorderSizePixel = 0
                 Holder.Parent = Main
-                Round(Holder, 8)
+                Round(Holder, 12)
+                local HolderStroke = Instance.new("UIStroke")
+                HolderStroke.Color = Crimson
+                HolderStroke.Transparency = 0.55
+                HolderStroke.Thickness = 1
+                HolderStroke.Parent = Holder
 
-                local Dot = Instance.new("Frame")
-                Dot.AnchorPoint = Vector2.new(0, 0.5)
-                Dot.Position = UDim2.new(0, 12, 0.5, 0)
-                Dot.Size = UDim2.new(0, 10, 0, 10)
-                Dot.BorderSizePixel = 0
-                Dot.Parent = Holder
-                Round(Dot, 5)
+                local Circle = Instance.new("Frame")
+                Circle.AnchorPoint = Vector2.new(0, 0.5)
+                Circle.Position = UDim2.new(0, 10, 0.5, 0)
+                Circle.Size = UDim2.new(0, 24, 0, 24)
+                Circle.BackgroundColor3 = CardColor
+                Circle.BorderSizePixel = 0
+                Circle.Parent = Holder
+                Round(Circle, 12)
                 local Ring = Instance.new("UIStroke")
-                Ring.Thickness = 3
-                Ring.Transparency = 0.6
-                Ring.Parent = Dot
+                Ring.Thickness = 2
+                Ring.Parent = Circle
+                local Num = NewLabel(Circle, "00", 11, Color3.new(1, 1, 1), Enum.Font.GothamBold)
+                Num.Size = UDim2.new(1, 0, 1, 0)
+                Num.TextXAlignment = Enum.TextXAlignment.Center
 
-                local NameLabel = NewLabel(Holder, Name, 16, Color3.fromRGB(235, 235, 235), Enum.Font.GothamMedium)
-                NameLabel.Position = UDim2.new(0, 34, 0, 0)
-                NameLabel.Size = UDim2.new(0.6, -34, 1, 0)
+                local NameLabel = NewLabel(Holder, string.upper(Name), 14, Color3.new(1, 1, 1), Enum.Font.GothamBold)
+                NameLabel.Position = UDim2.new(0, 44, 0, 0)
+                NameLabel.Size = UDim2.new(0.6, -44, 1, 0)
 
-                local StatusLabel = NewLabel(Holder, "", 15, Color3.new(1, 1, 1), Enum.Font.GothamBold)
+                local StatusLabel = NewLabel(Holder, "", 13, Color3.new(1, 1, 1), Enum.Font.GothamBold)
                 StatusLabel.AnchorPoint = Vector2.new(1, 0)
                 StatusLabel.Position = UDim2.new(1, -12, 0, 0)
                 StatusLabel.Size = UDim2.new(0.4, -12, 1, 0)
                 StatusLabel.TextXAlignment = Enum.TextXAlignment.Right
 
-                Row = { Dot = Dot, Ring = Ring, Name = NameLabel, Status = StatusLabel, State = "pending" }
+                Row = { Circle = Circle, Ring = Ring, Num = Num, Name = NameLabel, Status = StatusLabel, State = "pending" }
                 Rows[Name] = Row
+                Renumber()
+                RebuildDividers()
             end
             Row.State = State
-            Row.Dot.BackgroundColor3 = StateColors[State]
-            Row.Ring.Color = StateColors[State]
-            Row.Name.TextColor3 = (State == "pending") and Color3.fromRGB(140, 140, 140) or Color3.fromRGB(235, 235, 235)
+            local Color = StateColors[State]
+            Row.Ring.Color = Color
+            Row.Circle.BackgroundColor3 = (State == "ok") and Color or CardColor
+            Row.Num.TextColor3 = (State == "ok") and Ink or Color
+            Row.Name.TextColor3 = (State == "pending") and Muted or Color3.new(1, 1, 1)
             Row.Status.Text = StateTexts[State]
-            Row.Status.TextColor3 = StateColors[State]
+            Row.Status.TextColor3 = Color
             if State == "fail" then Failed = true end
             if State == "slow" then Warned = true end
             UpdateProgress()
@@ -238,8 +291,8 @@ do
             end)
         end
 
-        -- Espera real: comprueba que el juego este listo antes de arrancar las funciones.
-        -- Si algo tarda demasiado, sigue de todos modos para no quedarse colgado.
+        -- Real wait: checks that the game is ready before the features start.
+        -- If something takes too long it continues anyway so it never hangs.
         local function WaitFor(Name, Condition, Timeout)
             SetRow(Name, "wait")
             local Start = os.clock()
@@ -255,8 +308,20 @@ do
             return false
         end
 
-        SetRow("Libreria", "pending")
-        SetRow("Configuraciones", "pending")
+        -- Bottom accent line
+        local Accent = Instance.new("Frame")
+        Accent.LayoutOrder = 99
+        Accent.Size = UDim2.new(1, 0, 0, 3)
+        Accent.BackgroundColor3 = Color3.new(1, 1, 1)
+        Accent.BorderSizePixel = 0
+        Accent.Parent = Main
+        Round(Accent, 2)
+        local AccentGradient = Instance.new("UIGradient")
+        AccentGradient.Color = ColorSequence.new(CrimsonLight, Color3.fromRGB(60, 12, 30))
+        AccentGradient.Parent = Accent
+
+        SetRow("Library", "pending")
+        SetRow("Settings", "pending")
 
         _G.TWZSplash = {
             Plan = function(Names)
@@ -271,30 +336,30 @@ do
             WaitReady = function()
                 pcall(function()
                     local LocalPlayer = game:GetService("Players").LocalPlayer
-                    WaitFor("Personaje", function()
+                    WaitFor("Character", function()
                         local Character = LocalPlayer.Character
                         return Character
                             and Character:FindFirstChildOfClass("Humanoid")
                             and Character:FindFirstChild("HumanoidRootPart")
                     end, 20)
-                    WaitFor("Interfaz del juego", function()
+                    WaitFor("Game interface", function()
                         local PlayerGui = LocalPlayer:FindFirstChild("PlayerGui")
                         return PlayerGui and PlayerGui:FindFirstChild("MainGui")
                     end, 15)
-                    task.wait(1.5) -- margen para que el juego termine de vestir al personaje
+                    task.wait(1.5) -- margin so the game finishes dressing the character
                 end)
             end,
             Done = function(Seconds)
                 pcall(function()
                     SetProgress(1)
                     if Failed then
-                        Subtitle.Text = "Listo, pero algo fallo"
+                        Subtitle.Text = "READY - SOMETHING FAILED"
                         Subtitle.TextColor3 = StateColors.fail
                     elseif Warned then
-                        Subtitle.Text = "Listo (algo tardo en cargar)"
+                        Subtitle.Text = "READY - SOMETHING WAS SLOW"
                         Subtitle.TextColor3 = StateColors.slow
                     else
-                        Subtitle.Text = "Todo listo en " .. string.format("%.1f", Seconds or 0) .. " s"
+                        Subtitle.Text = "ALL SET IN " .. string.format("%.1f", Seconds or 0) .. " S"
                         Subtitle.TextColor3 = StateColors.ok
                     end
                 end)
@@ -302,8 +367,11 @@ do
             end,
             Close = Close,
         }
-        Close(90) -- seguro: se cierra sola aunque el script termine antes de tiempo
+        Close(90) -- safety: closes by itself even if the script ends early
     end)
+    if not Built and Gui then
+        pcall(function() Gui:Destroy() end)
+    end
 end
 
 local ScriptLoadingStart = os.clock()
@@ -965,7 +1033,7 @@ Locations = nil
 
 -- || ESPERAR A QUE EL JUEGO ESTE LISTO || (no aplica en el menu principal)
 if _G.TWZSplash and not IsMainMenu then
-    _G.TWZSplash.Plan({ "Personaje", "Interfaz del juego" })
+    _G.TWZSplash.Plan({ "Character", "Game interface" })
     _G.TWZSplash.WaitReady()
 end
 
@@ -1042,7 +1110,7 @@ SetGlobal("save script to files")
 local function SaveScriptToFiles(Link, File, Version, DeleteFile, Attempt)
     Attempt = (Attempt or 0) + 1
     if Attempt > 3 then
-        warn("[Tomas World Zero] El archivo '" .. tostring(File) .. "' fallo 3 veces seguidas, se omite.")
+        warn("[Tomas World Zero] File '" .. tostring(File) .. "' failed 3 times in a row, skipping it.")
         return nil
     end
     local FileData
@@ -1069,7 +1137,7 @@ local function SaveScriptToFiles(Link, File, Version, DeleteFile, Attempt)
                     end
                     warn("writefile() failed or data was corrupted, trying again in 2 seconds\nReason: " ..tostring(DownloadError))
                     if DownloadTries >= 5 then
-                        warn("[Tomas World Zero] No se pudo descargar '" .. tostring(File) .. "' tras 5 intentos.")
+                        warn("[Tomas World Zero] Could not download '" .. tostring(File) .. "' after 5 attempts.")
                         break
                     end
                     task.wait(2)
@@ -3437,18 +3505,18 @@ local function CreateToggles(ToggleTable)
 end
 
 SetGlobal("getting obsidian Library")
-if _G.TWZSplash then _G.TWZSplash.Step("Libreria", nil) end
+if _G.TWZSplash then _G.TWZSplash.Step("Library", nil) end
 Library = SaveScriptToFiles("https://raw.githubusercontent.com/b2rtx/spai90/main/oldlibrary", "L", 3)
 if not Library then
-    warn("[Tomas World Zero] No se pudo cargar la libreria propia, no se puede continuar.")
+    warn("[Tomas World Zero] Could not load the library, cannot continue.")
     if _G.TWZSplash then
-        _G.TWZSplash.Step("Libreria", false)
+        _G.TWZSplash.Step("Library", false)
         _G.TWZSplash.Close(5)
     end
     _G.ScriptRunning = nil
     return
 end
-if _G.TWZSplash then _G.TWZSplash.Step("Libreria", true) end
+if _G.TWZSplash then _G.TWZSplash.Step("Library", true) end
 
 Options = Library.Options
 Toggles = Library.Toggles
@@ -3529,37 +3597,37 @@ CreateToggles({
     { "AutoPrestigeToggle", Text = "Auto prestige", Tooltip = "When you reach level 160 the script will teleport you to world 1, prestige, and then go to crabby crusade.", Tab = ThirdTab }
 })
 SecondTab:AddButton({
-    Text = "Diagnostico",
-    Tooltip = "Usalo cuando el script se quede quieto: escribe en la consola el estado de tu personaje y de las funciones principales.",
+    Text = "Diagnostics",
+    Tooltip = "Use it when the script stops doing anything: prints your character state and the main features to the console.",
     Func = function()
         local Success, Result = pcall(function()
-            local function Has(Value) return Value and "si" or "NO" end
+            local function Has(Value) return Value and "yes" or "NO" end
             local Character = LocalPlayer.Character
             local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
             print("TWZ DIAG ------------------------------")
-            print("TWZ DIAG lugar: dungeon=" .. tostring(IsDungeon) .. " mundo=" .. tostring(IsWorld) .. " menu=" .. tostring(IsMainMenu))
-            print("TWZ DIAG script apagado (KillSwitch): " .. tostring(KillSwitch))
-            print("TWZ DIAG personaje actual: " .. Has(Character))
-            print("TWZ DIAG personaje guardado: " .. Has(PlayerCharacter) .. " | es el mismo: " .. tostring(Character ~= nil and PlayerCharacter == Character))
-            print("TWZ DIAG HumanoidRootPart guardado: " .. Has(PlayerRoot) .. " | valido: " .. tostring(PlayerRoot ~= nil and PlayerRoot.Parent == Character))
-            print("TWZ DIAG Collider guardado: " .. Has(PlayerCollider) .. " | valido: " .. tostring(PlayerCollider ~= nil and PlayerCollider.Parent == Character))
+            print("TWZ DIAG location: dungeon=" .. tostring(IsDungeon) .. " world=" .. tostring(IsWorld) .. " menu=" .. tostring(IsMainMenu))
+            print("TWZ DIAG script stopped (KillSwitch): " .. tostring(KillSwitch))
+            print("TWZ DIAG current character: " .. Has(Character))
+            print("TWZ DIAG saved character: " .. Has(PlayerCharacter) .. " | same as current: " .. tostring(Character ~= nil and PlayerCharacter == Character))
+            print("TWZ DIAG saved HumanoidRootPart: " .. Has(PlayerRoot) .. " | valid: " .. tostring(PlayerRoot ~= nil and PlayerRoot.Parent == Character))
+            print("TWZ DIAG saved Collider: " .. Has(PlayerCollider) .. " | valid: " .. tostring(PlayerCollider ~= nil and PlayerCollider.Parent == Character))
             if PlayerRoot then
-                print("TWZ DIAG posicion: " .. tostring(PlayerRoot.Position))
+                print("TWZ DIAG position: " .. tostring(PlayerRoot.Position))
             end
             if Humanoid then
-                print("TWZ DIAG vida: " .. tostring(math.floor(Humanoid.Health)) .. " / " .. tostring(math.floor(Humanoid.MaxHealth)))
+                print("TWZ DIAG health: " .. tostring(math.floor(Humanoid.Health)) .. " / " .. tostring(math.floor(Humanoid.MaxHealth)))
             end
             for _, Name in ipairs({ "AutoProgressToggle", "KillauraToggle", "SafeKillauraToggle", "PetKillauraToggle", "CollectDropToggle", "WaitTimeToggle" }) do
                 local Toggle = Toggles[Name]
                 print("TWZ DIAG " .. Name .. ": " .. tostring(Toggle and Toggle.Value))
             end
-            print("TWZ DIAG mobs vivos: " .. tostring(IsAliveMobs))
+            print("TWZ DIAG alive mobs: " .. tostring(IsAliveMobs))
             print("TWZ DIAG ------------------------------")
         end)
         if Success then
-            Library:Notify("Diagnostico escrito en la consola", 4)
+            Library:Notify("Diagnostics written to the console", 4)
         else
-            warn("TWZ DIAG fallo: " .. tostring(Result))
+            warn("TWZ DIAG failed: " .. tostring(Result))
         end
     end,
 })
@@ -7375,7 +7443,7 @@ if IsDungeon and not KillSwitch then
     local Success, Result = pcall(function()
         ClassSkills = SaveScriptToFiles("https://raw.githubusercontent.com/b2rtx/spai90/main/c", "C", 5.4)
         PetSkills = SaveScriptToFiles("https://raw.githubusercontent.com/b2rtx/spai90/main/p", "P", 4.5)
-        if _G.TWZSplash then _G.TWZSplash.Step("Clases y mascotas", (ClassSkills and PetSkills) and true or false) end
+        if _G.TWZSplash then _G.TWZSplash.Step("Classes & pets", (ClassSkills and PetSkills) and true or false) end
         if ClassSkills and PetSkills then
             Class = GetPlayerClass()
             if Class ~= nil then
@@ -8262,13 +8330,13 @@ do
     if OwnExists then
         SaveManager = SaveScriptToFiles(OwnSaveManagerLink, "S", 2)
     else
-        warn("[Tomas World Zero] No se encontro 'savemanager' en tu repo, usando la copia externa.")
+        warn("[Tomas World Zero] 'savemanager' not found in your repo, using the external copy.")
         SaveManager = SaveScriptToFiles("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/addons/SaveManager.lua", "S", 3)
     end
 end
 
 if _G.TWZSplash then
-    _G.TWZSplash.Step("Configuraciones", SaveManager ~= nil)
+    _G.TWZSplash.Step("Settings", SaveManager ~= nil)
     _G.TWZSplash.Done(os.clock() - ScriptLoadingStart)
 end
 print("Script took", FormatDecimal(os.clock() - ScriptLoadingStart), "seconds to fully load from execution time")
@@ -8300,10 +8368,10 @@ if SaveManager then
         SaveManager:LoadAutoloadConfig()
     end)
     if not SMSuccess then
-        warn("[Tomas World Zero] SaveManager fallo (las configuraciones no se guardaran): " .. tostring(SMError))
+        warn("[Tomas World Zero] SaveManager failed (settings will not be saved): " .. tostring(SMError))
     end
 else
-    warn("[Tomas World Zero] No se pudo descargar SaveManager; las configuraciones no se guardaran.")
+    warn("[Tomas World Zero] Could not download SaveManager; settings will not be saved.")
 end
 
 do
