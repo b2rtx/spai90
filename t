@@ -3528,6 +3528,41 @@ CreateToggles({
     { "DodgeLethalToggle", Text = "Dodge lethal damage", Tooltip = "Melee classes only. Some attacks may automatically be dodged even when turned off.", Tab = ThirdTab },
     { "AutoPrestigeToggle", Text = "Auto prestige", Tooltip = "When you reach level 160 the script will teleport you to world 1, prestige, and then go to crabby crusade.", Tab = ThirdTab }
 })
+SecondTab:AddButton({
+    Text = "Diagnostico",
+    Tooltip = "Usalo cuando el script se quede quieto: escribe en la consola el estado de tu personaje y de las funciones principales.",
+    Func = function()
+        local Success, Result = pcall(function()
+            local function Has(Value) return Value and "si" or "NO" end
+            local Character = LocalPlayer.Character
+            local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
+            print("TWZ DIAG ------------------------------")
+            print("TWZ DIAG lugar: dungeon=" .. tostring(IsDungeon) .. " mundo=" .. tostring(IsWorld) .. " menu=" .. tostring(IsMainMenu))
+            print("TWZ DIAG script apagado (KillSwitch): " .. tostring(KillSwitch))
+            print("TWZ DIAG personaje actual: " .. Has(Character))
+            print("TWZ DIAG personaje guardado: " .. Has(PlayerCharacter) .. " | es el mismo: " .. tostring(Character ~= nil and PlayerCharacter == Character))
+            print("TWZ DIAG HumanoidRootPart guardado: " .. Has(PlayerRoot) .. " | valido: " .. tostring(PlayerRoot ~= nil and PlayerRoot.Parent == Character))
+            print("TWZ DIAG Collider guardado: " .. Has(PlayerCollider) .. " | valido: " .. tostring(PlayerCollider ~= nil and PlayerCollider.Parent == Character))
+            if PlayerRoot then
+                print("TWZ DIAG posicion: " .. tostring(PlayerRoot.Position))
+            end
+            if Humanoid then
+                print("TWZ DIAG vida: " .. tostring(math.floor(Humanoid.Health)) .. " / " .. tostring(math.floor(Humanoid.MaxHealth)))
+            end
+            for _, Name in ipairs({ "AutoProgressToggle", "KillauraToggle", "SafeKillauraToggle", "PetKillauraToggle", "CollectDropToggle", "WaitTimeToggle" }) do
+                local Toggle = Toggles[Name]
+                print("TWZ DIAG " .. Name .. ": " .. tostring(Toggle and Toggle.Value))
+            end
+            print("TWZ DIAG mobs vivos: " .. tostring(IsAliveMobs))
+            print("TWZ DIAG ------------------------------")
+        end)
+        if Success then
+            Library:Notify("Diagnostico escrito en la consola", 4)
+        else
+            warn("TWZ DIAG fallo: " .. tostring(Result))
+        end
+    end,
+})
 SecondTab:AddLabel("Account for ping", true)
 SecondTab:AddSlider("PingSlider", {
     Text = "Ping",
