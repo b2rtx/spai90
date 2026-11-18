@@ -5886,6 +5886,35 @@ do
 
         Info = Library:Validate(Info, Templates.Dropdown)
 
+        -- Dictionary-style Values ({ [Key] = "Display text" }): the key is what gets stored/saved/returned
+        -- and the text is only what is shown. A plain list of strings keeps working exactly as before.
+        if typeof(Info.Values) == "table" and next(Info.Values) ~= nil and Info.Values[1] == nil then
+            local Dictionary = Info.Values
+            local Keys = {}
+            for Key in Dictionary do
+                table.insert(Keys, tostring(Key))
+            end
+            table.sort(Keys)
+            Info.Values = Keys
+
+            local PreviousListFormat = Info.FormatListValue
+            Info.FormatListValue = function(Key)
+                local Text = Dictionary[Key]
+                if Text == nil then Text = Key end
+                if PreviousListFormat then
+                    return PreviousListFormat(Text)
+                end
+                return Text
+            end
+            if not Info.FormatDisplayValue then
+                Info.FormatDisplayValue = function(Key)
+                    local Text = Dictionary[Key]
+                    if Text == nil then Text = Key end
+                    return Text
+                end
+            end
+        end
+
         local Groupbox = self
         local Container = Groupbox.Container
 
