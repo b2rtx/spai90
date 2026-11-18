@@ -3507,7 +3507,7 @@ end
 
 SetGlobal("getting obsidian Library")
 if _G.TWZSplash then _G.TWZSplash.Step("Library", nil) end
-Library = SaveScriptToFiles("https://raw.githubusercontent.com/b2rtx/spai90/main/oldlibrary", "L", 3)
+Library = SaveScriptToFiles("https://raw.githubusercontent.com/b2rtx/spai90/main/oldlibrary", "L", 4)
 if not Library then
     warn("[Tomas World Zero] Could not load the library, cannot continue.")
     if _G.TWZSplash then
