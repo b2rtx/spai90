@@ -4764,7 +4764,7 @@ SecondTab:AddSlider("InfResetSlider", {
     Text = "Floor",
     Default = 200,
     Min = 155,
-    Max = 400,
+    Max = 500,
     Rounding = 0,
     Compact = true,
     Tooltip = "Allows you to change the floor that infinite tower restarts at when the `Periodically reset inf tower` option is selected.",
@@ -5530,11 +5530,25 @@ FirstTab:AddButton({
                             end
                         end
                         print("TWZ DIAG tracked mobs: " .. tostring(MobCount))
+                        print("TWZ DIAG autofarm: " .. tostring(SV.Autofarm) .. " | paused (TempStop): " .. tostring(TempStop) .. " | can target: " .. tostring(CanTarget))
                         local PartCount = 0
-                        for _ in TeleportParts do
+                        for Part, PartData in TeleportParts do
                             PartCount = PartCount + 1
+                            if PartCount <= 12 then
+                                local InGame = Part ~= nil and Part.Parent ~= nil
+                                local Distance = -1
+                                if InGame and PlayerRoot then
+                                    Distance = math.floor((Part.Position - PlayerRoot.Position).Magnitude)
+                                end
+                                print("TWZ DIAG trigger: " .. tostring(Part.Name)
+                                    .. " | in game: " .. tostring(InGame)
+                                    .. " | skipped (DontTeleport): " .. tostring(PartData.DontTeleport == true)
+                                    .. " | regenerates: " .. tostring(PartData.Regenerates == true)
+                                    .. " | touch valid: " .. tostring(PartData.TouchPart ~= nil and PartData.TouchPart.Parent ~= nil)
+                                    .. " | distance: " .. tostring(Distance))
+                            end
                         end
-                        print("TWZ DIAG objects being teleported: " .. tostring(PartCount))
+                        print("TWZ DIAG triggers tracked: " .. tostring(PartCount))
                     end
 
                     -- Executor compatibility
