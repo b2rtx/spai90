@@ -5558,6 +5558,15 @@ FirstTab:AddButton({
                                 table.insert(Names, Object.Name)
                             end
                             print("TWZ DIAG mission objects: " .. table.concat(Names, ", "))
+                            local Door = MissionObjects:FindFirstChild("BossDoorTrigger")
+                            if Door and Door:IsA("BasePart") then
+                                local DoorDistance = PlayerRoot and math.floor((Door.Position - PlayerRoot.Position).Magnitude) or -1
+                                print("TWZ DIAG BossDoorTrigger: size " .. tostring(Door.Size)
+                                    .. " | distance: " .. tostring(DoorDistance)
+                                    .. " | has TouchInterest: " .. tostring(Door:FindFirstChild("TouchInterest") ~= nil)
+                                    .. " | CanTouch: " .. tostring(Door.CanTouch)
+                                    .. " | registered by the script: " .. tostring(TeleportParts[Door] ~= nil))
+                            end
                         end
                         print("TWZ DIAG autofarm: " .. tostring(SV.Autofarm) .. " | paused (TempStop): " .. tostring(TempStop) .. " | can target: " .. tostring(CanTarget))
                         local PartCount = 0
@@ -7951,6 +7960,63 @@ if IsDungeon then
             task.wait()
         end
         SV.DungeonPartList = nil
+        if IsTower and ISV.MissionId ~= 56 then
+            -- Tower fallback. In some towers the boss door is opened by the SERVER when a player touches it, so it has no
+            -- TouchInterest on the client and the script can never register it (that is why it only advanced with 2+ players:
+            -- the other player walked onto it). When the script is completely idle on the boss floor, move onto the door
+            -- the same way. It never runs if the door was registered normally, while mobs are alive, or during "legit time".
+            task.spawn(function()
+                local FallbackSuccess, FallbackResult = pcall(function()
+                    local NoWavesFloor = false
+                    local TowersPrint = Remotes:WaitForChild("Towers_Print", 10)
+                    if TowersPrint then
+                        ConnectionTable["TWZTowerNoWaves"] = TowersPrint.OnClientEvent:Connect(function(Text)
+                            if type(Text) == "string" and string.find(Text, "wave defense") then
+                                NoWavesFloor = string.find(Text, "false") ~= nil
+                            end
+                        end)
+                    end
+
+                    local IdleSince
+                    local LastTry = 0
+                    local Attempts = {}
+                    while not KillSwitch do
+                        task.wait(1)
+                        local Trigger = MissionObjects and MissionObjects:FindFirstChild("BossDoorTrigger")
+                        local Humanoid = PlayerCharacter and PlayerCharacter:FindFirstChildOfClass("Humanoid")
+                        local CanTry = SV and SV.Autofarm and not HoldForRealTime and not TempStop
+                            and Trigger and Trigger:IsA("BasePart") and Trigger.Parent
+                            and not TeleportParts[Trigger]
+                            and IsAliveMobs <= 0
+                            and PlayerRoot and PlayerRoot.Parent
+                            and Humanoid and Humanoid.Health > 0
+                        if CanTry then
+                            IdleSince = IdleSince or time()
+                            local IdleTime = time() - IdleSince
+                            local TriesDone = Attempts[Trigger] or 0
+                            if TriesDone < 3 and IdleTime >= 12 and (NoWavesFloor or IdleTime >= 40) and time() - LastTry >= 15 then
+                                LastTry = time()
+                                Attempts[Trigger] = TriesDone + 1
+                                print("TWZ: boss door cannot be touched from the client, moving onto it (attempt " .. tostring(Attempts[Trigger]) .. "/3)")
+                                for _ = 1, 15 do
+                                    if KillSwitch or not (PlayerRoot and PlayerRoot.Parent and Trigger.Parent) then
+                                        break
+                                    end
+                                    PlayerRoot.CFrame = CFrame.new(Trigger.Position)
+                                    TeleportStandPart()
+                                    task.wait(0.1)
+                                end
+                            end
+                        else
+                            IdleSince = nil
+                        end
+                    end
+                end)
+                if not FallbackSuccess then
+                    SaveErrorToFile("TOWER BOSS DOOR", FallbackResult)
+                end
+            end)
+        end
         if IsTower then
             task.spawn(function()
                 if ISV.MissionId ~= 56 then
