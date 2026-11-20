@@ -5508,7 +5508,7 @@ FirstTab:AddButton({
                     if Humanoid then
                         print("TWZ DIAG health: " .. tostring(math.floor(Humanoid.Health)) .. " / " .. tostring(math.floor(Humanoid.MaxHealth)))
                     end
-                    for _, Name in ipairs({ "AutoProgressToggle", "KillauraToggle", "SafeKillauraToggle", "PetKillauraToggle", "CollectDropToggle", "CollectChestToggle", "WaitTimeToggle" }) do
+                    for _, Name in ipairs({ "AutoProgressToggle", "KillauraToggle", "SafeKillauraToggle", "PetKillauraToggle", "CollectDropToggle", "CollectChestToggle", "WaitTimeToggle", "RestartStuckToggle" }) do
                         local Toggle = Toggles[Name]
                         print("TWZ DIAG " .. Name .. ": " .. tostring(Toggle and Toggle.Value))
                     end
@@ -5530,6 +5530,35 @@ FirstTab:AddButton({
                             end
                         end
                         print("TWZ DIAG tracked mobs: " .. tostring(MobCount))
+                        print("TWZ DIAG players in server: " .. tostring(#Players:GetPlayers()))
+
+                        -- What really exists in the world (to compare with what the script is tracking)
+                        local WorldMobCount = 0
+                        for _, WorldMob in Mobs:GetChildren() do
+                            WorldMobCount = WorldMobCount + 1
+                            if WorldMobCount <= 15 then
+                                local WorldCollider = WorldMob:FindFirstChild("Collider")
+                                local Anchor = WorldCollider or WorldMob:FindFirstChildWhichIsA("BasePart", true)
+                                local MobDistance = -1
+                                if Anchor and PlayerRoot then
+                                    MobDistance = math.floor((Anchor.Position - PlayerRoot.Position).Magnitude)
+                                end
+                                print("TWZ DIAG world mob: " .. WorldMob.Name
+                                    .. " | tracked: " .. tostring(ISV.MobTable[WorldMob] ~= nil)
+                                    .. " | has Collider: " .. tostring(WorldCollider ~= nil)
+                                    .. " | distance: " .. tostring(MobDistance))
+                            end
+                        end
+                        print("TWZ DIAG mobs in the world: " .. tostring(WorldMobCount))
+
+                        -- Objects of the current floor (doors, triggers...)
+                        if MissionObjects then
+                            local Names = {}
+                            for _, Object in MissionObjects:GetChildren() do
+                                table.insert(Names, Object.Name)
+                            end
+                            print("TWZ DIAG mission objects: " .. table.concat(Names, ", "))
+                        end
                         print("TWZ DIAG autofarm: " .. tostring(SV.Autofarm) .. " | paused (TempStop): " .. tostring(TempStop) .. " | can target: " .. tostring(CanTarget))
                         local PartCount = 0
                         for Part, PartData in TeleportParts do
@@ -5549,6 +5578,23 @@ FirstTab:AddButton({
                             end
                         end
                         print("TWZ DIAG triggers tracked: " .. tostring(PartCount))
+
+                        -- What really exists in the game vs what the script is tracking
+                        pcall(function()
+                            local RealMobs = Mobs:GetChildren()
+                            print("TWZ DIAG mobs in the game: " .. tostring(#RealMobs))
+                            for Index, RealMob in RealMobs do
+                                if Index > 10 then break end
+                                print("TWZ DIAG   game mob: " .. RealMob.Name .. " | tracked by script: " .. tostring(ISV.MobTable[RealMob] ~= nil))
+                            end
+                        end)
+                        pcall(function()
+                            local ObjectNames = {}
+                            for _, Child in MissionObjects:GetChildren() do
+                                table.insert(ObjectNames, Child.Name)
+                            end
+                            print("TWZ DIAG MissionObjects: " .. table.concat(ObjectNames, ", "))
+                        end)
                     end
 
                     -- Executor compatibility
