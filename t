@@ -5508,7 +5508,7 @@ FirstTab:AddButton({
                     if Humanoid then
                         print("TWZ DIAG health: " .. tostring(math.floor(Humanoid.Health)) .. " / " .. tostring(math.floor(Humanoid.MaxHealth)))
                     end
-                    for _, Name in ipairs({ "AutoProgressToggle", "KillauraToggle", "SafeKillauraToggle", "PetKillauraToggle", "CollectDropToggle", "CollectChestToggle", "WaitTimeToggle", "RestartStuckToggle" }) do
+                    for _, Name in ipairs({ "AutoProgressToggle", "KillauraToggle", "SafeKillauraToggle", "PetKillauraToggle", "CollectDropToggle", "CollectChestToggle", "WaitTimeToggle", "RestartStuckToggle", "RemoveOtherPlayersToggle", "DisableRenderingToggle", "PreventEffectsToggle", "MobESPToggle" }) do
                         local Toggle = Toggles[Name]
                         print("TWZ DIAG " .. Name .. ": " .. tostring(Toggle and Toggle.Value))
                     end
